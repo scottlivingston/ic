@@ -1,0 +1,16 @@
+[tools]
+rust = "latest"
+"cargo:cross" = "latest"
+
+[tasks.dev]
+description = "Run locally for development"
+run = "cargo run"
+env = { RUST_BACKTRACE = "1" }
+
+[tasks.build]
+description = "Build for local target"
+run = "cargo build --release"
+
+[tasks.build-pi]
+description = "Cross-compile for Pi Zero 2 W (aarch64)"
+run = "cross build --release --target aarch64-unknown-linux-gnu"

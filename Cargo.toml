@@ -1,0 +1,36 @@
+[package]
+name = "ic"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = { version = "0.17", default-features = false, features = [
+    "bevy_asset",
+    "bevy_camera",
+    "bevy_core_pipeline",
+    "bevy_render",
+    "bevy_winit",
+    "bevy_sprite",
+    "bevy_sprite_render",
+    "bevy_state",
+    "bevy_log",
+    "multi_threaded",
+    "x11",
+] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }
+# tokio-tungstenite = "0.26"
+axum = { version = "0.8", features = ["ws"] }
+tower-http = { version = "0.6", features = ["cors"] }
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rustsam = { git = "https://github.com/thedjinn/rustsam", rev = "8cbe5ffb5c08bec96ec79dc8a1982f44773147e0" }
+rodio = { version = "0.21", default-features = false, features = ["playback", "symphonia-all"] }
+bytemuck = { version = "1", features = ["derive"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1
