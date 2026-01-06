@@ -2,6 +2,7 @@ mod audio;
 mod crt;
 mod events;
 mod face;
+mod sam;
 mod server;
 
 use bevy::prelude::*;

@@ -2,13 +2,13 @@ use std::sync::Mutex;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
-use rustsam::{parser, reciter, renderer};
+use crate::sam;
 
-// SAM voice settings - higher pitch = higher voice
-const SAM_SPEED: u8 = 110; // Slower = more robotic (original IC used 140 in sam-js)
-const SAM_PITCH: u8 = 38; // Lower = higher voice
-const SAM_MOUTH: u8 = 180; // Affects formants
-const SAM_THROAT: u8 = 180; // Affects formants
+// SAM voice settings - target voice parameters
+const SAM_SPEED: u8 = 140; // Speech speed (original IC target)
+const SAM_PITCH: u8 = 60; // Voice pitch (lower = higher voice)
+const SAM_MOUTH: u8 = 220; // Mouth formant (affects F1)
+const SAM_THROAT: u8 = 220; // Throat formant (affects F2)
 
 /// Handle to communicate with the SAM thread
 /// Wrapped in Mutex to satisfy Bevy's Sync requirement for Resources
@@ -55,17 +55,15 @@ impl SamHandle {
 
 fn generate_speech_internal(text: &str) -> Result<Vec<u8>, String> {
     // Step 1: Convert text to phonemes
-    let phonemes = reciter::text_to_phonemes(text)
-        .map_err(|e| format!("Failed to convert text to phonemes: {:?}", e))?;
+    let phonemes = sam::text_to_phonemes(text)?;
 
     // Step 2: Parse phonemes
-    let parsed = parser::parse_phonemes(&phonemes)
-        .map_err(|e| format!("Failed to parse phonemes: {:?}", e))?;
+    let parsed = sam::parse_phonemes(&phonemes)?;
 
     // Step 3: Render audio
-    // Parameters: phonemes, speed, pitch, mouth, throat, sing_mode
-    // Returns Vec<u8> directly (unsigned 8-bit PCM)
-    let samples = renderer::render(&parsed, SAM_PITCH, SAM_MOUTH, SAM_THROAT, SAM_SPEED, false);
+    // Parameters: phonemes, pitch, mouth, throat, speed, sing_mode
+    // Returns Vec<u8> directly (unsigned 8-bit PCM at 22050 Hz)
+    let samples = sam::render(&parsed, SAM_PITCH, SAM_MOUTH, SAM_THROAT, SAM_SPEED, false);
 
     Ok(samples)
 }
