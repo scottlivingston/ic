@@ -1,8 +1,8 @@
+# IC
+
 <p align="center">
   <img src="ic.png" alt="IC" width="600">
 </p>
-
-# IC
 
 A recreation of the IC helper robot from the horror game [ROUTINE](https://store.steampowered.com/app/606160/ROUTINE/).
 
@@ -65,6 +65,7 @@ Health check endpoint.
 Make IC speak the given text.
 
 **Request Body:**
+
 ```json
 {
   "msg": "Hello world"
@@ -78,6 +79,7 @@ Make IC speak the given text.
 Update CRT effect settings.
 
 **Request Body:**
+
 ```json
 {
   "glow": true,
