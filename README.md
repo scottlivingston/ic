@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="ic.png" alt="IC" width="600">
+</p>
+
 # IC
 
 A recreation of the IC helper robot from the horror game [ROUTINE](https://store.steampowered.com/app/606150/ROUTINE/).
