@@ -29,6 +29,9 @@ const effectState = {
   grid: false,
 };
 
+// Audio state
+let audioVolume = 0.5;
+
 async function sendSpeak(msg) {
   try {
     const response = await fetch("/api/speak", {
@@ -56,6 +59,21 @@ async function sendEffects() {
     }
   } catch (err) {
     console.error("Error sending effects:", err);
+  }
+}
+
+async function sendVolume(volume) {
+  try {
+    const response = await fetch("/api/volume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ volume }),
+    });
+    if (!response.ok) {
+      console.error("Failed to send volume:", response.statusText);
+    }
+  } catch (err) {
+    console.error("Error sending volume:", err);
   }
 }
 
@@ -104,6 +122,21 @@ function render() {
         <div class="effect-row">
           <button class="toggle-btn ${effectState.grid ? "active" : ""}" data-effect="grid">Grid</button>
         </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-header" data-section="audio">Audio <span class="collapse-icon">-</span></h2>
+      <div class="section-content" data-section="audio">
+        <div class="audio-controls">
+          <div class="effect-row">
+            <div class="slider-group" style="flex: 1;">
+              <label class="slider-label">Volume</label>
+              <input type="range" class="slider" data-slider="volume" min="0" max="1" step="0.05" value="${audioVolume}" />
+              <span class="slider-value">${Math.round(audioVolume * 100)}%</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -169,6 +202,11 @@ function render() {
         const valueSpan = slider.nextElementSibling;
         valueSpan.textContent = `${slider.value}%`;
         sendEffects();
+      } else if (key === "volume") {
+        audioVolume = parseFloat(slider.value);
+        const valueSpan = slider.nextElementSibling;
+        valueSpan.textContent = `${Math.round(audioVolume * 100)}%`;
+        sendVolume(audioVolume);
       }
     });
   });

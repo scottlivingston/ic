@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
+use std::time::Duration;
 
 use crate::sam;
 
@@ -49,7 +50,9 @@ impl SamHandle {
         drop(tx);
 
         let rx = self.response_rx.lock().unwrap();
-        rx.recv().map_err(|_| "SAM thread died".to_string())?
+        // Use timeout to avoid blocking forever if SAM thread dies
+        rx.recv_timeout(Duration::from_secs(30))
+            .map_err(|e| format!("SAM thread error: {}", e))?
     }
 }
 

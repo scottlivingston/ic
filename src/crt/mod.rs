@@ -1,6 +1,5 @@
 #![allow(dead_code)] // ShaderType derive generates unused check functions
 
-pub mod blur;
 pub mod effects;
 
 use bevy::{
@@ -29,7 +28,6 @@ use bevy::{
     },
 };
 
-use blur::BlurPipeline;
 use effects::{update_effects_from_events, CrtEffects};
 
 use crate::face::{EYE_GAP, EYE_HEIGHT, EYE_WIDTH, FACE_Y_OFFSET, MOUTH_BASE_Y, MOUTH_HEIGHT, MOUTH_WIDTH};
@@ -40,9 +38,6 @@ impl Plugin for CrtPlugin {
     fn build(&self, app: &mut App) {
         // SDF shader (single pass, faster)
         embedded_asset!(app, "shaders/crt_sdf.wgsl");
-        // Keep Gaussian shaders available for reference
-        embedded_asset!(app, "shaders/crt_gaussian.wgsl");
-        embedded_asset!(app, "shaders/blur_horizontal.wgsl");
 
         app.init_resource::<CrtEffects>()
             .add_plugins(ExtractComponentPlugin::<CrtSettings>::default())
@@ -70,7 +65,8 @@ impl Plugin for CrtPlugin {
 #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
 struct CrtLabel;
 
-/// Component that holds CRT settings for the camera
+/// Component that holds CRT settings for the camera.
+/// Boolean flags use u32 instead of bool for WGSL shader compatibility.
 #[derive(Component, Default, Clone, Copy, ExtractComponent)]
 pub struct CrtSettings {
     pub glow_enabled: u32,
@@ -311,21 +307,6 @@ fn init_crt_pipeline(
     fullscreen_shader: Res<FullscreenShader>,
 ) {
     commands.insert_resource(CrtPipeline::new(
-        &render_device,
-        &asset_server,
-        &pipeline_cache,
-        &fullscreen_shader,
-    ));
-}
-
-fn init_blur_pipeline(
-    mut commands: Commands,
-    render_device: Res<RenderDevice>,
-    asset_server: Res<AssetServer>,
-    pipeline_cache: Res<PipelineCache>,
-    fullscreen_shader: Res<FullscreenShader>,
-) {
-    commands.insert_resource(BlurPipeline::new(
         &render_device,
         &asset_server,
         &pipeline_cache,

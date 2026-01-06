@@ -2,13 +2,14 @@ pub mod sam;
 
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 use bevy::log::{error, info};
 use bevy::prelude::*;
 use rodio::{OutputStreamBuilder, Sink};
 
 use crate::face::SpeakingState;
-use crate::events::{ReadyEvent, SayEvent};
+use crate::events::{SayEvent, VolumeEvent};
 
 pub struct AudioPlugin;
 
@@ -21,7 +22,7 @@ impl Plugin for AudioPlugin {
         let audio_state = AudioState::new(sam_handle);
 
         app.insert_resource(audio_state)
-            .add_systems(Update, (handle_say_events, check_speech_finished));
+            .add_systems(Update, (handle_say_events, handle_volume_events, check_speech_finished));
     }
 }
 
@@ -29,6 +30,8 @@ impl Plugin for AudioPlugin {
 pub struct AudioState {
     /// Shared state to track if speech is currently playing
     is_playing: Arc<Mutex<bool>>,
+    /// Shared volume level (0.0 to 1.0)
+    volume: Arc<Mutex<f32>>,
     /// Channel to send audio data to the playback thread
     audio_sender: std::sync::mpsc::Sender<Vec<u8>>,
     /// Handle to the SAM TTS thread
@@ -39,6 +42,8 @@ impl AudioState {
     pub fn new(sam_handle: sam::SamHandle) -> Self {
         let is_playing = Arc::new(Mutex::new(false));
         let is_playing_clone = is_playing.clone();
+        let volume = Arc::new(Mutex::new(0.5f32));
+        let volume_clone = volume.clone();
 
         let (audio_sender, audio_receiver) = std::sync::mpsc::channel::<Vec<u8>>();
 
@@ -65,9 +70,19 @@ impl AudioState {
                         // Create rodio source from samples
                         let source = rodio::buffer::SamplesBuffer::new(1, 22050, samples);
 
+                        // Apply current volume setting
+                        let vol = *volume_clone.lock().unwrap();
+                        sink.set_volume(vol);
+
                         *is_playing_clone.lock().unwrap() = true;
                         sink.append(source);
-                        sink.sleep_until_end();
+
+                        // Poll for completion while updating volume in real-time
+                        while !sink.empty() {
+                            let vol = *volume_clone.lock().unwrap();
+                            sink.set_volume(vol);
+                            thread::sleep(Duration::from_millis(100));
+                        }
                         *is_playing_clone.lock().unwrap() = false;
                     }
                     Err(_) => {
@@ -80,6 +95,7 @@ impl AudioState {
 
         Self {
             is_playing,
+            volume,
             audio_sender,
             sam_handle,
         }
@@ -98,6 +114,10 @@ impl AudioState {
 
     pub fn is_playing(&self) -> bool {
         *self.is_playing.lock().unwrap()
+    }
+
+    pub fn set_volume(&self, volume: f32) {
+        *self.volume.lock().unwrap() = volume.clamp(0.0, 1.0);
     }
 }
 
@@ -124,12 +144,19 @@ fn handle_say_events(
 fn check_speech_finished(
     audio_state: Res<AudioState>,
     mut speaking_state: ResMut<SpeakingState>,
-    mut ready_events: MessageWriter<ReadyEvent>,
 ) {
     // Check if we were speaking and audio has finished
     if speaking_state.speaking && !audio_state.is_playing() {
         speaking_state.stop_speaking();
-        // Send ready event to signal we can receive the next message
-        ready_events.write(ReadyEvent);
+    }
+}
+
+fn handle_volume_events(
+    mut volume_events: MessageReader<VolumeEvent>,
+    audio_state: Res<AudioState>,
+) {
+    for event in volume_events.read() {
+        info!("Setting volume to {:.0}%", event.volume * 100.0);
+        audio_state.set_volume(event.volume);
     }
 }
