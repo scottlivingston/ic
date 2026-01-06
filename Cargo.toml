@@ -15,7 +15,8 @@ bevy = { version = "0.17", default-features = false, features = [
     "bevy_state",
     "bevy_log",
     "multi_threaded",
-    "x11",
+    "wayland",
+    "embedded_watcher",
 ] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }
 # tokio-tungstenite = "0.26"

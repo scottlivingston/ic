@@ -4,6 +4,7 @@ pub mod blur;
 pub mod effects;
 
 use bevy::{
+    asset::embedded_asset,
     core_pipeline::{
         core_2d::graph::{Core2d, Node2d},
         FullscreenShader,
@@ -28,13 +29,21 @@ use bevy::{
     },
 };
 
-use blur::{BlurHorizontalLabel, BlurHorizontalNode, BlurPipeline};
+use blur::BlurPipeline;
 use effects::{update_effects_from_events, CrtEffects};
+
+use crate::face::{EYE_GAP, EYE_HEIGHT, EYE_WIDTH, FACE_Y_OFFSET, MOUTH_BASE_Y, MOUTH_HEIGHT, MOUTH_WIDTH};
 
 pub struct CrtPlugin;
 
 impl Plugin for CrtPlugin {
     fn build(&self, app: &mut App) {
+        // SDF shader (single pass, faster)
+        embedded_asset!(app, "shaders/crt_sdf.wgsl");
+        // Keep Gaussian shaders available for reference
+        embedded_asset!(app, "shaders/crt_gaussian.wgsl");
+        embedded_asset!(app, "shaders/blur_horizontal.wgsl");
+
         app.init_resource::<CrtEffects>()
             .add_plugins(ExtractComponentPlugin::<CrtSettings>::default())
             .add_systems(Update, update_effects_from_events)
@@ -45,15 +54,13 @@ impl Plugin for CrtPlugin {
         };
 
         render_app
-            .add_systems(RenderStartup, (init_blur_pipeline, init_crt_pipeline))
-            .add_render_graph_node::<ViewNodeRunner<BlurHorizontalNode>>(Core2d, BlurHorizontalLabel)
+            .add_systems(RenderStartup, init_crt_pipeline)
             .add_render_graph_node::<ViewNodeRunner<CrtNode>>(Core2d, CrtLabel)
             .add_render_graph_edges(
                 Core2d,
                 (
                     Node2d::Tonemapping,
-                    BlurHorizontalLabel,  // First: horizontal blur
-                    CrtLabel,             // Second: vertical blur + CRT effects
+                    CrtLabel,  // Single pass SDF-based CRT effects
                     Node2d::EndMainPassPostProcessing,
                 ),
             );
@@ -78,6 +85,12 @@ pub struct CrtSettings {
     pub time: f32,
     pub screen_width: f32,
     pub screen_height: f32,
+    // Face geometry for SDF glow
+    pub left_eye_pos: Vec2,
+    pub right_eye_pos: Vec2,
+    pub eye_half_size: Vec2,
+    pub mouth_pos: Vec2,
+    pub mouth_half_size: Vec2,
 }
 
 impl CrtSettings {
@@ -109,7 +122,12 @@ struct CrtSettingsUniform {
     grid_enabled: u32,
     time: f32,
     screen_size: Vec2,
-    _padding: Vec2,
+    // Face geometry for SDF glow
+    left_eye_pos: Vec2,
+    right_eye_pos: Vec2,
+    eye_half_size: Vec2,
+    mouth_pos: Vec2,
+    mouth_half_size: Vec2,
 }
 
 impl From<&CrtSettings> for CrtSettingsUniform {
@@ -126,7 +144,11 @@ impl From<&CrtSettings> for CrtSettingsUniform {
             grid_enabled: settings.grid_enabled,
             time: settings.time,
             screen_size: Vec2::new(settings.screen_width, settings.screen_height),
-            _padding: Vec2::ZERO,
+            left_eye_pos: settings.left_eye_pos,
+            right_eye_pos: settings.right_eye_pos,
+            eye_half_size: settings.eye_half_size,
+            mouth_pos: settings.mouth_pos,
+            mouth_half_size: settings.mouth_half_size,
         }
     }
 }
@@ -148,6 +170,13 @@ fn sync_crt_settings(
     settings.time = time.elapsed_secs();
     settings.screen_width = window.width();
     settings.screen_height = window.height();
+
+    // Face geometry for SDF glow (from face.rs constants)
+    settings.left_eye_pos = Vec2::new(-EYE_GAP / 2.0 - MOUTH_WIDTH / 2.0, FACE_Y_OFFSET);
+    settings.right_eye_pos = Vec2::new(EYE_GAP / 2.0 + MOUTH_WIDTH / 2.0, FACE_Y_OFFSET);
+    settings.eye_half_size = Vec2::new(EYE_WIDTH / 2.0, EYE_HEIGHT / 2.0);
+    settings.mouth_pos = Vec2::new(0.0, MOUTH_BASE_Y);
+    settings.mouth_half_size = Vec2::new(MOUTH_WIDTH / 2.0, MOUTH_HEIGHT / 2.0);
 }
 
 #[derive(Default)]
@@ -245,7 +274,7 @@ impl CrtPipeline {
             mapped_at_creation: false,
         });
 
-        let shader = asset_server.load::<Shader>("shaders/crt_gaussian.wgsl");
+        let shader = asset_server.load::<Shader>("embedded://ic/crt/shaders/crt_sdf.wgsl");
 
         let pipeline_id = pipeline_cache.queue_render_pipeline(
             RenderPipelineDescriptor {

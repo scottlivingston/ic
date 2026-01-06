@@ -30,11 +30,8 @@ if [[ "$BUILD_ONLY" == false ]]; then
         build-essential \
         pkg-config \
         libudev-dev \
-        libx11-dev \
-        libxi-dev \
-        libxcursor-dev \
-        libxrandr-dev \
-        libxinerama-dev \
+        libwayland-dev \
+        libxkbcommon-dev \
         libasound2-dev
 
     # Install Rust if not present

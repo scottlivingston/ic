@@ -1,5 +1,6 @@
-// CRT Post-Processing Shader
-// Implements: glow, scanlines, flicker, curvature (barrel distortion), grid
+// CRT Post-Processing Shader (Second pass of separable Gaussian blur + CRT effects)
+// Input: horizontally-blurred image from blur_horizontal.wgsl
+// Implements: vertical blur completion, scanlines, flicker, curvature, grid
 
 #import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
 
@@ -18,12 +19,7 @@ struct CrtSettings {
     grid_enabled: u32,
     time: f32,
     screen_size: vec2<f32>,
-    // Face geometry for SDF glow
-    left_eye_pos: vec2<f32>,
-    right_eye_pos: vec2<f32>,
-    eye_half_size: vec2<f32>,
-    mouth_pos: vec2<f32>,
-    mouth_half_size: vec2<f32>,
+    _padding: vec2<f32>,
 }
 
 @group(0) @binding(2) var<uniform> settings: CrtSettings;
@@ -41,10 +37,9 @@ fn random(seed: f32) -> f32 {
     return fract(sin(seed * 12.9898) * 43758.5453);
 }
 
-// SDF for a box/rectangle
-fn sdf_box(p: vec2<f32>, size: vec2<f32>) -> f32 {
-    let d = abs(p) - size;
-    return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0);
+// Gaussian weight function
+fn gaussian(x: f32, sigma: f32) -> f32 {
+    return exp(-(x * x) / (2.0 * sigma * sigma));
 }
 
 @fragment
@@ -59,7 +54,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         uv = barrel_distort(uv, settings.curvature_amount * 0.01);
 
         // Smooth edge falloff instead of hard cutoff for antialiasing
-        let edge_width = 0.02;
+        let edge_width = 0.02; // Width of the fade region
         let fade_x = smoothstep(0.0, edge_width, uv.x) * smoothstep(0.0, edge_width, 1.0 - uv.x);
         let fade_y = smoothstep(0.0, edge_width, uv.y) * smoothstep(0.0, edge_width, 1.0 - uv.y);
         edge_fade = fade_x * fade_y;
@@ -71,41 +66,44 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     }
 
     // Sample the screen texture
-    var color = textureSample(screen_texture, texture_sampler, uv).rgb;
+    // RGB contains original color, alpha contains horizontal blur data
+    let sample = textureSample(screen_texture, texture_sampler, uv);
+    var color = sample.rgb;
 
-    // Apply scanlines first (before glow)
+    // Apply vertical blur (second pass of separable Gaussian blur)
+    // Complete the blur by sampling alpha channel vertically
+    if settings.glow_enabled != 0u {
+        let pixel_size = 1.0 / settings.screen_size;
+
+        var blur_accum = 0.0;
+        var weight_sum = 0.0;
+
+        let radius = 16;
+        let sigma = 6.0;
+
+        // Vertical blur pass - sample alpha channel (horizontal blur data) in Y direction
+        for (var y = -radius; y <= radius; y++) {
+            let offset = vec2<f32>(0.0, f32(y)) * pixel_size;
+            let weight = gaussian(abs(f32(y)), sigma);
+            let sample_alpha = textureSample(screen_texture, texture_sampler, uv + offset).a;
+
+            blur_accum += sample_alpha * weight;
+            weight_sum += weight;
+        }
+
+        // Complete the separable blur and apply glow with intensity
+        let blur_normalized = blur_accum / weight_sum;
+        let glow_color = vec3<f32>(0.0, 1.0, 0.667);  // #00ffaa cyan tint
+        color = color + glow_color * blur_normalized * settings.glow_intensity;
+    }
+
+    // Apply scanlines
     if settings.scanlines_enabled != 0u {
         let screen_y = uv.y * settings.screen_size.y;
-        // Create horizontal scanlines every 4 pixels
+        // Create horizontal scanlines every 4 pixels (0.25 = 1/4)
         let scanline = step(0.5, fract(screen_y * 0.25));
         // Make scanlines more visible by using higher opacity multiplier
         color = mix(color, color * 0.3, scanline * settings.scanline_opacity * 2.0);
-    }
-
-    // Apply glow on top of scanlines using SDF (perfectly smooth, no blur needed)
-    if settings.glow_enabled != 0u {
-        let intensity = settings.glow_intensity;
-
-        // Convert UV to centered pixel coordinates (flip Y to match Bevy's coordinate system)
-        let p = (uv - 0.5) * vec2(settings.screen_size.x, -settings.screen_size.y);
-
-        // Calculate SDF for each element (using dynamic geometry from uniforms)
-        let d_left_eye = sdf_box(p - settings.left_eye_pos, settings.eye_half_size);
-        let d_right_eye = sdf_box(p - settings.right_eye_pos, settings.eye_half_size);
-        let d_mouth = sdf_box(p - settings.mouth_pos, settings.mouth_half_size);
-
-        // Combine: use minimum distance to any shape
-        let d = min(min(d_left_eye, d_right_eye), d_mouth);
-
-        // Only apply glow outside the shapes (d > 0)
-        // Steep exponential falloff
-        let dist = max(d, 0.0);
-        let falloff_rate = 0.21 / (intensity + 0.1);
-        let glow = exp(-dist * falloff_rate) * 0.5;
-
-        // Add glow with cyan tint (#00ffaa)
-        let glow_color = vec3<f32>(0.0, 1.0, 0.667);
-        color = color + glow_color * glow * intensity;
     }
 
     // Apply flicker
@@ -128,26 +126,9 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             step(0.98, fract(screen_pos.y / grid_size))
         );
 
-        // Apply vignette mask to grid when curvature is enabled
-        var grid_opacity = 0.1;
-        if settings.curvature_enabled != 0u {
-            let centered = uv - 0.5;
-            let dist = length(centered) * 2.0;
-            let vignette = smoothstep(0.5, 1.0, dist);
-            grid_opacity *= (1.0 - vignette);
-        }
-
         // Grid color: rgba(0, 255, 170, 0.1) = #00ffaa
         let grid_color = vec3<f32>(0.0, 1.0, 0.667);
-        color = mix(color, grid_color, grid_line * grid_opacity);
-    }
-
-    // Apply vignette when curvature is enabled
-    if settings.curvature_enabled != 0u {
-        let centered = uv - 0.5;
-        let dist = length(centered) * 2.0;
-        let vignette = smoothstep(0.8, 1.2, dist);
-        color = mix(color, vec3<f32>(0.0), vignette); // fade to black
+        color = mix(color, grid_color, grid_line * 0.1);
     }
 
     // Apply edge fade for smooth antialiased edges on curvature

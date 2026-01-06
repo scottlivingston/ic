@@ -1,4 +1,4 @@
-// CRT Post-Processing Shader
+// CRT Post-Processing Shader (SDF-based glow, single pass)
 // Implements: glow, scanlines, flicker, curvature (barrel distortion), grid
 
 #import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput

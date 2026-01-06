@@ -28,14 +28,10 @@ fi
 
 info "Setting up kiosk mode for user: $KIOSK_USER"
 
-# Install minimal X packages
-info "Installing X11 packages..."
+# Install cage Wayland compositor
+info "Installing cage..."
 apt-get update
-apt-get install -y --no-install-recommends \
-    xserver-xorg \
-    x11-xserver-utils \
-    xinit \
-    openbox
+apt-get install -y --no-install-recommends cage
 
 # Configure auto-login
 info "Configuring auto-login..."
@@ -46,45 +42,17 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin $KIOSK_USER --noclear %I \$TERM
 EOF
 
-# Create .xinitrc
-info "Creating .xinitrc..."
-cat > "$KIOSK_HOME/.xinitrc" << EOF
-#!/bin/sh
-
-# Disable screen blanking and power management
-xset s off
-xset s noblank
-xset -dpms
-
-# Hide cursor after 1 second of inactivity
-# (requires unclutter package, optional)
-if command -v unclutter &> /dev/null; then
-    unclutter -idle 1 &
-fi
-
-# Start openbox window manager
-openbox &
-
-# Wait for openbox to start
-sleep 1
-
-# Run the IC app
-exec $IC_BINARY
-EOF
-chown "$KIOSK_USER:$KIOSK_USER" "$KIOSK_HOME/.xinitrc"
-chmod +x "$KIOSK_HOME/.xinitrc"
-
-# Configure auto-start X on login
-info "Configuring auto-start X..."
+# Configure auto-start cage on login
+info "Configuring auto-start cage..."
 BASH_PROFILE="$KIOSK_HOME/.bash_profile"
-STARTX_LINE='[[ -z $DISPLAY && $XDG_VTNR -eq 1 ]] && startx'
+CAGE_LINE="[[ -z \$WAYLAND_DISPLAY && \$XDG_VTNR -eq 1 ]] && cage $IC_BINARY"
 
 if [[ -f "$BASH_PROFILE" ]]; then
-    if ! grep -q "startx" "$BASH_PROFILE"; then
-        echo "$STARTX_LINE" >> "$BASH_PROFILE"
+    if ! grep -q "cage" "$BASH_PROFILE"; then
+        echo "$CAGE_LINE" >> "$BASH_PROFILE"
     fi
 else
-    echo "$STARTX_LINE" > "$BASH_PROFILE"
+    echo "$CAGE_LINE" > "$BASH_PROFILE"
     chown "$KIOSK_USER:$KIOSK_USER" "$BASH_PROFILE"
 fi
 

@@ -12,20 +12,20 @@ impl Plugin for FacePlugin {
     }
 }
 
-// Face dimensions (matching CSS from original IC)
-const EYE_WIDTH: f32 = 40.0;
-const EYE_HEIGHT: f32 = 80.0;
-const MOUTH_WIDTH: f32 = 60.0;
-const MOUTH_HEIGHT: f32 = 12.0;
-const MOUTH_HEIGHT_SPEAKING: f32 = 35.0;
-const EYE_GAP: f32 = 160.0; // 10rem = ~160px
+// Face dimensions (scaled 1.25x from original)
+pub const EYE_WIDTH: f32 = 50.0;
+pub const EYE_HEIGHT: f32 = 100.0;
+pub const MOUTH_WIDTH: f32 = 75.0;
+pub const MOUTH_HEIGHT: f32 = 15.0;
+const MOUTH_HEIGHT_SPEAKING: f32 = 44.0;
+pub const EYE_GAP: f32 = 300.0; // increased for more horizontal space between eyes and mouth
 // Golden ratio positioning: shorter segment from top
 // φ = 1.618..., shorter ratio = 1 - 1/φ ≈ 0.382
 // For 480px height: 0.382 * 480 ≈ 183px from top
 // In Bevy coords (center=0): 240 - 183 ≈ 57
-const FACE_Y_OFFSET: f32 = 57.0;
+pub const FACE_Y_OFFSET: f32 = 57.0;
 // Base Y position for mouth (bottom of mouth aligns with bottom of eyes)
-const MOUTH_BASE_Y: f32 = FACE_Y_OFFSET - EYE_HEIGHT / 2.0 + MOUTH_HEIGHT / 2.0;
+pub const MOUTH_BASE_Y: f32 = FACE_Y_OFFSET - EYE_HEIGHT / 2.0 + MOUTH_HEIGHT / 2.0;
 
 // Face color: #ccffee
 const FACE_COLOR: Color = Color::srgb(0.8, 1.0, 0.933);

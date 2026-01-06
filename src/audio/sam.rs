@@ -5,9 +5,9 @@ use std::thread;
 use rustsam::{parser, reciter, renderer};
 
 // SAM voice settings - higher pitch = higher voice
-const SAM_SPEED: u8 = 50; // Slower = more robotic (original IC used 140 in sam-js)
-const SAM_PITCH: u8 = 210; // Lower = higher voice
-const SAM_MOUTH: u8 = 190; // Affects formants
+const SAM_SPEED: u8 = 110; // Slower = more robotic (original IC used 140 in sam-js)
+const SAM_PITCH: u8 = 38; // Lower = higher voice
+const SAM_MOUTH: u8 = 180; // Affects formants
 const SAM_THROAT: u8 = 180; // Affects formants
 
 /// Handle to communicate with the SAM thread
@@ -55,16 +55,17 @@ impl SamHandle {
 
 fn generate_speech_internal(text: &str) -> Result<Vec<u8>, String> {
     // Step 1: Convert text to phonemes
-    let phonemes =
-        reciter::text_to_phonemes(text).map_err(|e| format!("Failed to convert text to phonemes: {:?}", e))?;
+    let phonemes = reciter::text_to_phonemes(text)
+        .map_err(|e| format!("Failed to convert text to phonemes: {:?}", e))?;
 
     // Step 2: Parse phonemes
-    let parsed = parser::parse_phonemes(&phonemes).map_err(|e| format!("Failed to parse phonemes: {:?}", e))?;
+    let parsed = parser::parse_phonemes(&phonemes)
+        .map_err(|e| format!("Failed to parse phonemes: {:?}", e))?;
 
     // Step 3: Render audio
     // Parameters: phonemes, speed, pitch, mouth, throat, sing_mode
     // Returns Vec<u8> directly (unsigned 8-bit PCM)
-    let samples = renderer::render(&parsed, SAM_SPEED, SAM_PITCH, SAM_MOUTH, SAM_THROAT, false);
+    let samples = renderer::render(&parsed, SAM_PITCH, SAM_MOUTH, SAM_THROAT, SAM_SPEED, false);
 
     Ok(samples)
 }

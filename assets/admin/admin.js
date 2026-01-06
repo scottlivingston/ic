@@ -23,7 +23,7 @@ const effectState = {
   scanlines: true,
   scanline_opacity: 0.5,
   flicker: true,
-  flicker_amount: 0.15,
+  flicker_amount: 0.3,
   curvature: true,
   curvature_amount: 50,
   grid: false,
@@ -89,7 +89,7 @@ function render() {
           <button class="toggle-btn ${effectState.flicker ? "active" : ""}" data-effect="flicker">Flicker</button>
           <div class="slider-group">
             <label class="slider-label">Amount</label>
-            <input type="range" class="slider" data-slider="flicker_amount" min="0" max="0.3" step="0.01" value="${effectState.flicker_amount}" />
+            <input type="range" class="slider" data-slider="flicker_amount" min="0" max="1" step="0.01" value="${effectState.flicker_amount}" />
             <span class="slider-value">${Math.round(effectState.flicker_amount * 100)}%</span>
           </div>
         </div>

@@ -138,7 +138,7 @@ impl BlurPipeline {
             mapped_at_creation: false,
         });
 
-        let shader = asset_server.load::<Shader>("shaders/blur_horizontal.wgsl");
+        let shader = asset_server.load::<Shader>("embedded://ic/crt/shaders/blur_horizontal.wgsl");
 
         let pipeline_id = pipeline_cache.queue_render_pipeline(
             RenderPipelineDescriptor {

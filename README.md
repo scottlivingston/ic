@@ -4,7 +4,7 @@
 
 # IC
 
-A recreation of the IC helper robot from the horror game [ROUTINE](https://store.steampowered.com/app/606150/ROUTINE/).
+A recreation of the IC helper robot from the horror game [ROUTINE](https://store.steampowered.com/app/606160/ROUTINE/).
 
 ## Features
 
@@ -23,7 +23,7 @@ A recreation of the IC helper robot from the horror game [ROUTINE](https://store
 ```bash
 # Clone and enter directory
 git clone <repo-url>
-cd ic-bevy
+cd ic
 
 # Install tools
 mise install
@@ -47,28 +47,28 @@ Access the control panel at `http://localhost:3000/admin` to:
 
 ### Effects
 
-| Effect | Description |
-|--------|-------------|
-| Glow | Bloom effect around bright areas |
-| Scanlines | Horizontal CRT scan lines |
-| Flicker | Random screen flicker |
-| Curvature | CRT barrel distortion |
-| Grid | Pixel grid overlay |
+| Effect    | Description                      |
+| --------- | -------------------------------- |
+| Glow      | Bloom effect around bright areas |
+| Scanlines | Horizontal CRT scan lines        |
+| Flicker   | Random screen flicker            |
+| Curvature | CRT barrel distortion            |
+| Grid      | Pixel grid overlay               |
 
 ## Building
 
-| Command | Description |
-|---------|-------------|
-| `mise run dev` | Development mode |
-| `mise run build` | Release build |
-| `mise run build-pi` | Raspberry Pi Zero 2 |
+| Command             | Description        |
+| ------------------- | ------------------ |
+| `mise run dev`      | Development mode   |
+| `mise run build`    | Release build      |
+| `mise run build-pi` | Raspberry Pi build |
 
 ## API
 
 For integration with other applications:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/speak` | POST | Make IC say something (`{"msg": "text"}`) |
-| `/api/effects` | POST | Update CRT effects |
-| `/api/ws` | GET | WebSocket for real-time sync |
+| Endpoint       | Method | Description                               |
+| -------------- | ------ | ----------------------------------------- |
+| `/api/speak`   | POST   | Make IC say something (`{"msg": "text"}`) |
+| `/api/effects` | POST   | Update CRT effects                        |
+| `/api/ws`      | GET    | WebSocket for real-time sync              |

@@ -26,7 +26,7 @@ impl Default for CrtEffects {
             scanlines_enabled: true,
             scanline_opacity: 0.5,
             flicker_enabled: true,
-            flicker_amount: 0.15,
+            flicker_amount: 0.3,
             curvature_enabled: true,
             curvature_amount: 50.0,
             grid_enabled: false,
