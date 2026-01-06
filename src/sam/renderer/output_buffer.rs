@@ -37,19 +37,17 @@ impl OutputBuffer {
         self.buffer_pos += TIME_TABLE[self.old_time_table_index][index];
         let pos = (self.buffer_pos / 50) as usize;
 
-        // Check for buffer overflow
-        if pos > self.buffer.len() {
-            // In production, silently clamp
-            return;
+        // Grow buffer if needed instead of silently failing
+        if pos + 5 > self.buffer.len() {
+            // Grow by 4KB chunks for efficiency
+            self.buffer.resize(pos + 4096, 0);
         }
 
         self.old_time_table_index = index;
 
-        // Write a little bit in advance
+        // Write the 5 values
         for k in 0..5 {
-            if pos + k < self.buffer.len() {
-                self.buffer[pos + k] = array[k];
-            }
+            self.buffer[pos + k] = array[k];
         }
     }
 

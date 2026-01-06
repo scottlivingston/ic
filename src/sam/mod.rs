@@ -131,4 +131,24 @@ mod tests {
         let result = parse_phonemes("HEHLOW");
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_long_phrases() {
+        // These long phrases previously caused distortion or silence due to buffer overflow
+        let phrases = [
+            "Follow me to the check-in terminal and get ready for an adventure in The Mall!",
+            "You need to sign in using this terminal!",
+            "Welcome to the Mall Station!",
+            "Oh my. What a day!",
+        ];
+
+        for phrase in phrases {
+            let result = say(phrase, 60, 220, 220, 140);
+            assert!(result.is_ok(), "Failed on phrase: {}", phrase);
+            let samples = result.unwrap();
+            assert!(!samples.is_empty(), "Empty samples for phrase: {}", phrase);
+            // Long phrases should produce significant audio
+            assert!(samples.len() > 1000, "Too few samples for phrase: {} (got {})", phrase, samples.len());
+        }
+    }
 }

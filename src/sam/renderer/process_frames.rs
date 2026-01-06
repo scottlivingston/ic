@@ -96,7 +96,7 @@ pub fn process_frames(
     let mut last_sample_offset: u8 = 0;
     let mut pos: usize = 0;
 
-    let mut glottal_pulse = pitches.get(0).copied().unwrap_or(0) as i32;
+    let mut glottal_pulse = pitches.get(0).copied().unwrap_or(1).max(1) as i32;
     let mut mem38 = (glottal_pulse as f32 * 0.75) as i32;
 
     while frame_count > 0 {
@@ -104,7 +104,7 @@ pub fn process_frames(
 
         // Unvoiced sampled phoneme?
         if (flags & 248) != 0 {
-            let pitch = pitches.get(pos & 0xFF).copied().unwrap_or(0);
+            let pitch = pitches.get(pos).copied().unwrap_or(0);
             last_sample_offset = render_sample(output, last_sample_offset, flags, pitch);
             // Skip ahead two in the phoneme buffer
             pos += 2;
@@ -178,13 +178,18 @@ pub fn process_frames(
                 }
 
                 // Voiced sampled phonemes interleave the sample with the glottal pulse
-                let pitch = pitches.get(pos & 0xFF).copied().unwrap_or(0);
+                let pitch = pitches.get(pos).copied().unwrap_or(0);
                 last_sample_offset = render_sample(output, last_sample_offset, flags, pitch);
             }
         }
 
         // Reset for new glottal pulse
         glottal_pulse = pitches.get(pos).copied().unwrap_or(0) as i32;
+        // Ensure glottal_pulse is never 0 to prevent getting stuck in a loop
+        // where it decrements to -1 and never resets (because -1 != 0)
+        if glottal_pulse == 0 {
+            glottal_pulse = 1;
+        }
         mem38 = (glottal_pulse as f32 * 0.75) as i32;
 
         // Reset the formant wave generators

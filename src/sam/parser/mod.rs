@@ -127,19 +127,92 @@ fn apply_parser2(
     let mut i = 0;
     while i < phoneme_index.len() {
         let phoneme = phoneme_index[i];
-        if phoneme >= PHONEME_FLAGS.len() {
+
+        // Skip pauses
+        if phoneme == 0 {
             i += 1;
             continue;
         }
 
-        let flags = PHONEME_FLAGS[phoneme];
+        if phoneme < PHONEME_FLAGS.len() {
+            let flags = PHONEME_FLAGS[phoneme];
 
-        // Handle diphthongs - insert second part
-        if (flags & FLAG_DIPHTHONG) != 0 {
-            // Diphthongs need a second phoneme inserted
-            let second = if (flags & FLAG_DIP_YX) != 0 { 21 } else { 20 }; // YX or WX
-            insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, second, stress[i]);
+            // Handle diphthongs - insert second part (WX or YX)
+            if (flags & FLAG_DIPHTHONG) != 0 {
+                let second = if (flags & FLAG_DIP_YX) != 0 { 21 } else { 20 };
+                insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, second, stress[i], 0);
+                i += 2;
+                continue;
+            }
+        }
+
+        // Handle syllabic consonants: UL, UM, UN -> AX + consonant
+        match phoneme {
+            78 => {
+                // 'UL' => 'AX' 'L*' (phoneme 13 + 24)
+                phoneme_index[i] = 13; // AX
+                insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, 24, stress[i], 0);
+                i += 2;
+                continue;
+            }
+            79 => {
+                // 'UM' => 'AX' 'M*' (phoneme 13 + 27)
+                phoneme_index[i] = 13; // AX
+                insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, 27, stress[i], 0);
+                i += 2;
+                continue;
+            }
+            80 => {
+                // 'UN' => 'AX' 'N*' (phoneme 13 + 28)
+                phoneme_index[i] = 13; // AX
+                insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, 28, stress[i], 0);
+                i += 2;
+                continue;
+            }
+            _ => {}
+        }
+
+        // Handle R rules
+        if phoneme == 23 {
+            // R phoneme
+            if i > 0 {
+                let prior = phoneme_index[i - 1];
+                match prior {
+                    69 => phoneme_index[i - 1] = 42, // T R -> CH R
+                    57 => phoneme_index[i - 1] = 44, // D R -> J R
+                    _ => {
+                        if prior < PHONEME_FLAGS.len() && (PHONEME_FLAGS[prior] & FLAG_VOWEL) != 0 {
+                            phoneme_index[i] = 18; // <VOWEL> R -> <VOWEL> RX
+                        }
+                    }
+                }
+            }
             i += 1;
+            continue;
+        }
+
+        // Handle L rules
+        if phoneme == 24 && i > 0 {
+            let prior = phoneme_index[i - 1];
+            if prior < PHONEME_FLAGS.len() && (PHONEME_FLAGS[prior] & FLAG_VOWEL) != 0 {
+                phoneme_index[i] = 19; // <VOWEL> L -> <VOWEL> LX
+            }
+            i += 1;
+            continue;
+        }
+
+        // Handle CH and J (need doubled phonemes)
+        if phoneme == 42 {
+            // CH -> CH + **
+            insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, 43, stress[i], 0);
+            i += 2;
+            continue;
+        }
+        if phoneme == 44 {
+            // J -> J + **
+            insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, 45, stress[i], 0);
+            i += 2;
+            continue;
         }
 
         i += 1;
@@ -237,8 +310,11 @@ fn prolong_plosives(
         // Insert plosive variants for stop consonants
         if (flags & FLAG_STOPCONS) != 0 && (flags & FLAG_UNVOICED_STOPCONS) != 0 {
             // Insert aspirated version after unvoiced stop
-            insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, phoneme + 1, stress[i]);
-            insert_phoneme(phoneme_index, phoneme_len, stress, i + 2, phoneme + 2, stress[i]);
+            // Use proper lengths from the phoneme length table
+            let len1 = phoneme_length(phoneme + 1) as usize;
+            let len2 = phoneme_length(phoneme + 2) as usize;
+            insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, phoneme + 1, stress[i], len1);
+            insert_phoneme(phoneme_index, phoneme_len, stress, i + 2, phoneme + 2, stress[i], len2);
             i += 2;
         }
 
@@ -254,9 +330,10 @@ fn insert_phoneme(
     pos: usize,
     value: usize,
     stress_value: usize,
+    length: usize,
 ) {
     phoneme_index.insert(pos, value);
-    phoneme_len.insert(pos, 0);
+    phoneme_len.insert(pos, length);
     stress.insert(pos, stress_value);
 }
 

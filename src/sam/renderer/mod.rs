@@ -86,10 +86,9 @@ pub fn render(
         }
     }
 
-    // Calculate buffer size
-    // Reserve 176.4 * speed samples (= 8 * speed ms) for each frame
+    // Calculate initial buffer size estimate - will grow dynamically if needed
     let total_length: usize = phonemes.iter().map(|p| p.1).sum();
-    let buffer_size = ((176.4 * total_length as f64 * speed as f64) as usize).max(1);
+    let buffer_size = ((176.4 * total_length as f64 * speed as f64) as usize).max(4096);
 
     // Create output buffer and process frames
     let mut output = OutputBuffer::new(buffer_size);
