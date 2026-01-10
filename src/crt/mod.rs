@@ -30,7 +30,7 @@ use bevy::{
 
 use effects::{update_effects_from_events, CrtEffects};
 
-use crate::face::{EYE_GAP, EYE_HEIGHT, EYE_WIDTH, FACE_Y_OFFSET, MOUTH_BASE_Y, MOUTH_HEIGHT, MOUTH_WIDTH};
+use crate::face::{EYE_GAP, EYE_HEIGHT, EYE_WIDTH, FACE_Y_OFFSET, MOUTH_BASE_Y, MOUTH_HEIGHT, MOUTH_WIDTH, Mouth};
 
 pub struct CrtPlugin;
 
@@ -154,6 +154,7 @@ fn sync_crt_settings(
     time: Res<Time>,
     windows: Query<&Window>,
     mut cameras: Query<&mut CrtSettings, With<Camera2d>>,
+    mouth_query: Query<(&Sprite, &Transform), With<Mouth>>,
 ) {
     let Ok(window) = windows.single() else {
         return;
@@ -171,8 +172,17 @@ fn sync_crt_settings(
     settings.left_eye_pos = Vec2::new(-EYE_GAP / 2.0 - MOUTH_WIDTH / 2.0, FACE_Y_OFFSET);
     settings.right_eye_pos = Vec2::new(EYE_GAP / 2.0 + MOUTH_WIDTH / 2.0, FACE_Y_OFFSET);
     settings.eye_half_size = Vec2::new(EYE_WIDTH / 2.0, EYE_HEIGHT / 2.0);
-    settings.mouth_pos = Vec2::new(0.0, MOUTH_BASE_Y);
-    settings.mouth_half_size = Vec2::new(MOUTH_WIDTH / 2.0, MOUTH_HEIGHT / 2.0);
+
+    // Get mouth geometry from actual sprite (follows animation)
+    if let Ok((sprite, transform)) = mouth_query.single() {
+        let size = sprite.custom_size.unwrap_or(Vec2::new(MOUTH_WIDTH, MOUTH_HEIGHT));
+        settings.mouth_pos = transform.translation.truncate();
+        settings.mouth_half_size = size / 2.0;
+    } else {
+        // Fallback to static values if mouth not found
+        settings.mouth_pos = Vec2::new(0.0, MOUTH_BASE_Y);
+        settings.mouth_half_size = Vec2::new(MOUTH_WIDTH / 2.0, MOUTH_HEIGHT / 2.0);
+    }
 }
 
 #[derive(Default)]

@@ -1,0 +1,136 @@
+use bevy::prelude::*;
+
+use crate::app_state::AppMode;
+use crate::events::WifiConnectedEvent;
+use crate::wifi::{ConnectivityStatus, WifiService, HOTSPOT_IP, HOTSPOT_PASSWORD, HOTSPOT_SSID};
+
+pub struct OnboardingPlugin;
+
+impl Plugin for OnboardingPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(AppMode::Checking), check_connectivity)
+            .add_systems(OnEnter(AppMode::Onboarding), (start_hotspot, spawn_onboarding_ui))
+            .add_systems(OnExit(AppMode::Onboarding), (stop_hotspot, despawn_onboarding_ui))
+            .add_systems(
+                Update,
+                handle_wifi_connected.run_if(in_state(AppMode::Onboarding)),
+            );
+    }
+}
+
+#[derive(Component)]
+struct OnboardingUi;
+
+// Face color: #ccffee - same as face.rs
+const TEXT_COLOR: Color = Color::srgb(0.8, 1.0, 0.933);
+
+fn check_connectivity(wifi: Res<WifiService>, mut next_state: ResMut<NextState<AppMode>>) {
+    let status = wifi.0.check_connectivity();
+
+    match status {
+        ConnectivityStatus::Full | ConnectivityStatus::Limited => {
+            info!("WiFi connected, entering normal mode");
+            next_state.set(AppMode::Normal);
+        }
+        ConnectivityStatus::None => {
+            info!("No WiFi connection, entering onboarding mode");
+            next_state.set(AppMode::Onboarding);
+        }
+    }
+}
+
+fn start_hotspot(wifi: Res<WifiService>) {
+    info!("Starting WiFi hotspot: {} / {}", HOTSPOT_SSID, HOTSPOT_PASSWORD);
+    if let Err(e) = wifi.0.start_hotspot() {
+        error!("Failed to start hotspot: {}", e);
+    }
+}
+
+fn stop_hotspot(wifi: Res<WifiService>) {
+    info!("Stopping WiFi hotspot");
+    if let Err(e) = wifi.0.stop_hotspot() {
+        error!("Failed to stop hotspot: {}", e);
+    }
+}
+
+fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let font = asset_server.load("admin/videotype.ttf");
+
+    let text_font = TextFont {
+        font: font.clone(),
+        font_size: 32.0,
+        ..default()
+    };
+
+    let small_font = TextFont {
+        font: font.clone(),
+        font_size: 24.0,
+        ..default()
+    };
+
+    // Title
+    commands.spawn((
+        OnboardingUi,
+        Text2d::new("IC SETUP MODE"),
+        text_font.clone(),
+        TextColor(TEXT_COLOR),
+        Transform::from_xyz(0.0, 160.0, 1.0),
+    ));
+
+    // Instructions
+    commands.spawn((
+        OnboardingUi,
+        Text2d::new("Connect to WiFi:"),
+        small_font.clone(),
+        TextColor(TEXT_COLOR),
+        Transform::from_xyz(0.0, 80.0, 1.0),
+    ));
+
+    commands.spawn((
+        OnboardingUi,
+        Text2d::new(format!("Network: {}", HOTSPOT_SSID)),
+        small_font.clone(),
+        TextColor(TEXT_COLOR),
+        Transform::from_xyz(0.0, 40.0, 1.0),
+    ));
+
+    commands.spawn((
+        OnboardingUi,
+        Text2d::new(format!("Password: {}", HOTSPOT_PASSWORD)),
+        small_font.clone(),
+        TextColor(TEXT_COLOR),
+        Transform::from_xyz(0.0, 0.0, 1.0),
+    ));
+
+    commands.spawn((
+        OnboardingUi,
+        Text2d::new("Then open:"),
+        small_font.clone(),
+        TextColor(TEXT_COLOR),
+        Transform::from_xyz(0.0, -60.0, 1.0),
+    ));
+
+    commands.spawn((
+        OnboardingUi,
+        Text2d::new(format!("http://{}:3000", HOTSPOT_IP)),
+        small_font,
+        TextColor(TEXT_COLOR),
+        Transform::from_xyz(0.0, -100.0, 1.0),
+    ));
+}
+
+fn despawn_onboarding_ui(mut commands: Commands, query: Query<Entity, With<OnboardingUi>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
+    }
+}
+
+fn handle_wifi_connected(
+    mut events: MessageReader<WifiConnectedEvent>,
+    mut next_state: ResMut<NextState<AppMode>>,
+) {
+    for event in events.read() {
+        info!("WiFi connected with IP: {}", event.ip);
+        next_state.set(AppMode::Normal);
+    }
+}

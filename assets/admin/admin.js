@@ -30,7 +30,19 @@ const effectState = {
 };
 
 // Audio state
-let audioVolume = 0.5;
+let audioVolume = 0.2;
+
+// WiFi state
+let wifiNetworks = [];
+let wifiScanning = false;
+let wifiConnecting = false;
+let selectedNetwork = null;
+
+// HUD state
+let hudState = {
+  show_ip: false,
+  ip_address: null,
+};
 
 async function sendSpeak(msg) {
   try {
@@ -63,17 +75,110 @@ async function sendEffects() {
 }
 
 async function sendVolume(volume) {
+  // Scale volume: 100% on slider = 20% actual (new speaker is much louder)
+  const scaledVolume = volume * 0.2;
   try {
     const response = await fetch("/api/volume", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ volume }),
+      body: JSON.stringify({ volume: scaledVolume }),
     });
     if (!response.ok) {
       console.error("Failed to send volume:", response.statusText);
     }
   } catch (err) {
     console.error("Error sending volume:", err);
+  }
+}
+
+async function scanWifi() {
+  wifiScanning = true;
+  render();
+  try {
+    const response = await fetch("/api/wifi/scan");
+    if (response.ok) {
+      const data = await response.json();
+      wifiNetworks = data.networks || [];
+    } else {
+      console.error("Failed to scan WiFi:", response.statusText);
+      wifiNetworks = [];
+    }
+  } catch (err) {
+    console.error("Error scanning WiFi:", err);
+    wifiNetworks = [];
+  }
+  wifiScanning = false;
+  render();
+}
+
+async function connectWifi(ssid, password) {
+  wifiConnecting = true;
+  render();
+  try {
+    const response = await fetch("/api/wifi/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ssid, password }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert(`Connected to ${ssid}!\nIP: ${data.ip_address || "unknown"}`);
+      selectedNetwork = null;
+      await fetchHudStatus();
+    } else {
+      alert(`Failed to connect: ${data.error || "Unknown error"}`);
+    }
+  } catch (err) {
+    console.error("Error connecting to WiFi:", err);
+    alert("Error connecting to WiFi");
+  }
+  wifiConnecting = false;
+  render();
+}
+
+async function forgetWifi(ssid) {
+  try {
+    const response = await fetch("/api/wifi/forget", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ssid }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      await scanWifi();
+    } else {
+      alert(`Failed to forget network: ${data.error || "Unknown error"}`);
+    }
+  } catch (err) {
+    console.error("Error forgetting WiFi:", err);
+    alert("Error forgetting WiFi");
+  }
+}
+
+async function fetchHudStatus() {
+  try {
+    const response = await fetch("/api/hud/status");
+    if (response.ok) {
+      hudState = await response.json();
+    }
+  } catch (err) {
+    console.error("Error fetching HUD status:", err);
+  }
+}
+
+async function toggleIpHud(show) {
+  try {
+    const response = await fetch("/api/hud/ip", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ show }),
+    });
+    if (response.ok) {
+      hudState.show_ip = show;
+      render();
+    }
+  } catch (err) {
+    console.error("Error toggling IP HUD:", err);
   }
 }
 
@@ -136,6 +241,61 @@ function render() {
               <input type="range" class="slider" data-slider="volume" min="0" max="1" step="0.05" value="${audioVolume}" />
               <span class="slider-value">${Math.round(audioVolume * 100)}%</span>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-header" data-section="wifi">WiFi <span class="collapse-icon">-</span></h2>
+      <div class="section-content" data-section="wifi">
+        <div class="wifi-controls">
+          <button class="scan-btn" id="scan-wifi" ${wifiScanning ? "disabled" : ""}>
+            ${wifiScanning ? "Scanning..." : "Scan Networks"}
+          </button>
+          <div class="wifi-networks">
+            ${wifiNetworks.length === 0 ? '<div class="wifi-empty">No networks found. Click Scan to search.</div>' : ""}
+            ${wifiNetworks
+              .map(
+                (net) => `
+              <div class="wifi-network ${net.in_use ? "wifi-connected" : ""}" data-ssid="${net.ssid}">
+                <div class="wifi-info">
+                  <span class="wifi-ssid">${net.ssid}${net.in_use ? " (connected)" : ""}</span>
+                  <span class="wifi-signal">${net.signal}% ${net.security}</span>
+                </div>
+                ${net.in_use ? `<button class="wifi-forget-btn" data-ssid="${net.ssid}">Forget</button>` : ""}
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+          ${
+            selectedNetwork
+              ? `
+            <div class="wifi-connect-form">
+              <div class="wifi-selected">Connecting to: ${selectedNetwork}</div>
+              <input type="password" class="wifi-password" placeholder="Password" />
+              <div class="wifi-form-buttons">
+                <button class="wifi-connect-btn" ${wifiConnecting ? "disabled" : ""}>
+                  ${wifiConnecting ? "Connecting..." : "Connect"}
+                </button>
+                <button class="wifi-cancel-btn">Cancel</button>
+              </div>
+            </div>
+          `
+              : ""
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-header" data-section="display">Display <span class="collapse-icon">-</span></h2>
+      <div class="section-content" data-section="display">
+        <div class="display-controls">
+          <div class="effect-row">
+            <button class="toggle-btn ${hudState.show_ip ? "active" : ""}" id="ip-toggle">Show IP Address</button>
+            <span class="ip-display">${hudState.ip_address || "Not connected"}</span>
           </div>
         </div>
       </div>
@@ -244,6 +404,61 @@ function render() {
     }
   });
 
+  // WiFi handlers
+  const scanWifiBtn = app.querySelector("#scan-wifi");
+  if (scanWifiBtn) {
+    scanWifiBtn.addEventListener("click", scanWifi);
+  }
+
+  const wifiNetworkElements = app.querySelectorAll(".wifi-network");
+  wifiNetworkElements.forEach((el) => {
+    el.addEventListener("click", () => {
+      const ssid = el.dataset.ssid;
+      if (ssid && !el.classList.contains("wifi-connected")) {
+        selectedNetwork = ssid;
+        render();
+      }
+    });
+  });
+
+  const wifiForgetBtns = app.querySelectorAll(".wifi-forget-btn");
+  wifiForgetBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const ssid = btn.dataset.ssid;
+      if (ssid && confirm(`Forget network "${ssid}"?`)) {
+        forgetWifi(ssid);
+      }
+    });
+  });
+
+  const wifiConnectBtn = app.querySelector(".wifi-connect-btn");
+  if (wifiConnectBtn) {
+    wifiConnectBtn.addEventListener("click", () => {
+      const passwordInput = app.querySelector(".wifi-password");
+      const password = passwordInput ? passwordInput.value : "";
+      if (selectedNetwork) {
+        connectWifi(selectedNetwork, password);
+      }
+    });
+  }
+
+  const wifiCancelBtn = app.querySelector(".wifi-cancel-btn");
+  if (wifiCancelBtn) {
+    wifiCancelBtn.addEventListener("click", () => {
+      selectedNetwork = null;
+      render();
+    });
+  }
+
+  // HUD handlers
+  const ipToggleBtn = app.querySelector("#ip-toggle");
+  if (ipToggleBtn) {
+    ipToggleBtn.addEventListener("click", () => {
+      toggleIpHud(!hudState.show_ip);
+    });
+  }
+
   // Section collapse handlers
   const sectionHeaders = app.querySelectorAll(".section-header");
   sectionHeaders.forEach((header) => {
@@ -261,4 +476,5 @@ function render() {
   });
 }
 
-render();
+// Initialize: fetch HUD status then render
+fetchHudStatus().then(render);

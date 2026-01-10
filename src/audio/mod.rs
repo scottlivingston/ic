@@ -42,7 +42,7 @@ impl AudioState {
     pub fn new(sam_handle: sam::SamHandle) -> Self {
         let is_playing = Arc::new(Mutex::new(false));
         let is_playing_clone = is_playing.clone();
-        let volume = Arc::new(Mutex::new(0.5f32));
+        let volume = Arc::new(Mutex::new(0.04f32)); // 20% on admin slider (scaled by 0.2)
         let volume_clone = volume.clone();
 
         let (audio_sender, audio_receiver) = std::sync::mpsc::channel::<Vec<u8>>();

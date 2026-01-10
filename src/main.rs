@@ -1,17 +1,26 @@
+mod app_state;
 mod audio;
+mod config;
 mod crt;
 mod events;
 mod face;
+mod hud;
+mod onboarding;
 mod sam;
 mod server;
+mod wifi;
 
 use bevy::prelude::*;
 use bevy::window::{MonitorSelection, PresentMode, WindowMode};
 
+use app_state::AppMode;
 use audio::AudioPlugin;
-use crt::CrtPlugin;
+use crt::{CrtPlugin, CrtSettings};
 use face::FacePlugin;
+use hud::HudPlugin;
+use onboarding::OnboardingPlugin;
 use server::ServerPlugin;
+use wifi::WifiService;
 
 #[cfg(debug_assertions)]
 fn window_drag(mouse: Res<ButtonInput<MouseButton>>, mut windows: Query<&mut Window>) {
@@ -22,8 +31,26 @@ fn window_drag(mouse: Res<ButtonInput<MouseButton>>, mut windows: Query<&mut Win
     }
 }
 
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn((
+        Camera2d,
+        Camera {
+            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            ..default()
+        },
+        CrtSettings::default(),
+    ));
+}
+
 fn main() {
     let mut app = App::new();
+
+    // Insert WiFi service: mock in debug, real in release
+    #[cfg(debug_assertions)]
+    app.insert_resource(WifiService::new(wifi::MockWifi::new()));
+
+    #[cfg(not(debug_assertions))]
+    app.insert_resource(WifiService::new(wifi::NetworkManagerWifi));
 
     app.add_plugins(
         DefaultPlugins
@@ -44,9 +71,13 @@ fn main() {
             })
             .set(ImagePlugin::default_nearest()),
     )
+    .init_state::<AppMode>()
+    .add_systems(Startup, spawn_camera)
     .add_plugins(ServerPlugin)
     .add_plugins(CrtPlugin)
+    .add_plugins(OnboardingPlugin)
     .add_plugins(FacePlugin)
+    .add_plugins(HudPlugin)
     .add_plugins(AudioPlugin);
 
     #[cfg(debug_assertions)]

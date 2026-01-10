@@ -1,14 +1,15 @@
 use bevy::prelude::*;
 
-use crate::crt::CrtSettings;
+use crate::app_state::AppMode;
 
 pub struct FacePlugin;
 
 impl Plugin for FacePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SpeakingState>()
-            .add_systems(Startup, spawn_face)
-            .add_systems(Update, animate_mouth);
+            .add_systems(OnEnter(AppMode::Normal), spawn_face)
+            .add_systems(OnExit(AppMode::Normal), despawn_face)
+            .add_systems(Update, animate_mouth.run_if(in_state(AppMode::Normal)));
     }
 }
 
@@ -57,16 +58,6 @@ impl SpeakingState {
 }
 
 fn spawn_face(mut commands: Commands) {
-    // Camera with CRT settings and black background
-    commands.spawn((
-        Camera2d,
-        Camera {
-            clear_color: ClearColorConfig::Custom(Color::BLACK),
-            ..default()
-        },
-        CrtSettings::default(),
-    ));
-
     // Left eye
     commands.spawn((
         Eye,
@@ -133,5 +124,11 @@ fn animate_mouth(
         // Reset to default height and position when not speaking
         sprite.custom_size = Some(Vec2::new(MOUTH_WIDTH, MOUTH_HEIGHT));
         transform.translation.y = MOUTH_BASE_Y;
+    }
+}
+
+fn despawn_face(mut commands: Commands, query: Query<Entity, Or<(With<Eye>, With<Mouth>)>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
     }
 }

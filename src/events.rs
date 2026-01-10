@@ -25,3 +25,15 @@ pub struct EffectsEvent {
 pub struct VolumeEvent {
     pub volume: f32,
 }
+
+/// Event sent when the IP HUD toggle changes
+#[derive(Message, Debug, Clone)]
+pub struct ToggleHudEvent {
+    pub show: bool,
+}
+
+/// Event sent when WiFi connection succeeds
+#[derive(Message, Debug, Clone)]
+pub struct WifiConnectedEvent {
+    pub ip: String,
+}
