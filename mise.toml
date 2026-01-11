@@ -1,16 +1,29 @@
 [tools]
 rust = "latest"
 "cargo:cross" = "latest"
+pnpm = "latest"
+
+[tasks.build-ui]
+description = "Build admin UI"
+dir = "admin"
+run = "pnpm run build"
 
 [tasks.dev]
 description = "Run locally for development"
+depends = ["build-ui"]
 run = "cargo run"
-env = { RUST_BACKTRACE = "1" }
+env = { RUST_BACKTRACE = "1", RUST_LOG = "ic=debug,bevy_asset=debug,wgpu_hal=warning,info" }
 
 [tasks.build]
 description = "Build for local target"
-run = "cargo build --release"
+depends = ["build-ui"]
+run = "cargo build"
 
 [tasks.build-pi]
 description = "Cross-compile for Pi Zero 2 W (aarch64)"
+depends = ["build-ui"]
 run = "cross build --release --target aarch64-unknown-linux-gnu"
+
+[tasks.generate-faces]
+description = "Generate pre-rendered face assets for SpriteFacePlugin"
+run = "cargo run --features generate-assets"

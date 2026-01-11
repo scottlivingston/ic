@@ -9,6 +9,8 @@ pub struct HudPlugin;
 
 impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
+        // Font is registered by OnboardingPlugin
+
         app.init_resource::<HudState>()
             .add_systems(OnEnter(AppMode::Normal), (load_hud_config, spawn_ip_hud))
             .add_systems(OnExit(AppMode::Normal), despawn_ip_hud)
@@ -57,7 +59,7 @@ fn load_hud_config(
 }
 
 fn spawn_ip_hud(mut commands: Commands, asset_server: Res<AssetServer>, hud_state: Res<HudState>) {
-    let font = asset_server.load("admin/videotype.ttf");
+    let font = asset_server.load("embedded://ic/assets/videotype.ttf");
 
     let text_font = TextFont {
         font,

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::app_state::AppMode;
+use crate::events::FaceType;
 
 pub struct FacePlugin;
 
@@ -40,13 +41,15 @@ pub struct Mouth;
 #[derive(Resource, Default)]
 pub struct SpeakingState {
     pub speaking: bool,
+    pub face_type: FaceType,
     animation_timer: Timer,
     animation_phase: f32,
 }
 
 impl SpeakingState {
-    pub fn start_speaking(&mut self) {
+    pub fn start_speaking(&mut self, face_type: FaceType) {
         self.speaking = true;
+        self.face_type = face_type;
         self.animation_timer = Timer::from_seconds(1.0 / 15.0, TimerMode::Repeating);
         self.animation_phase = 0.0;
     }

@@ -127,12 +127,12 @@ fn handle_say_events(
     mut speaking_state: ResMut<SpeakingState>,
 ) {
     for event in say_events.read() {
-        info!("Processing Say event: {}", event.msg);
+        info!("Processing Say event: {} (face: {:?})", event.msg, event.face);
 
         // Generate and play SAM audio
         match audio_state.generate_and_play(&event.msg) {
             Ok(()) => {
-                speaking_state.start_speaking();
+                speaking_state.start_speaking(event.face);
             }
             Err(e) => {
                 error!("Failed to generate speech: {}", e);

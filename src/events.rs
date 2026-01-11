@@ -1,9 +1,18 @@
 use bevy::prelude::*;
 
+/// Face type for speech animation
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum FaceType {
+    #[default]
+    Default,
+    Angry,
+}
+
 /// Event sent when a Say command is received
 #[derive(Message, Debug, Clone)]
 pub struct SayEvent {
     pub msg: String,
+    pub face: FaceType,
 }
 
 /// Event sent when an Effects command is received

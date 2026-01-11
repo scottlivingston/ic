@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::config::AppConfig;
-use crate::events::{EffectsEvent, SayEvent, ToggleHudEvent, VolumeEvent, WifiConnectedEvent};
+use crate::events::{EffectsEvent, FaceType, SayEvent, ToggleHudEvent, VolumeEvent, WifiConnectedEvent};
 use crate::wifi::{self, ConnectivityStatus, WifiManager, WifiService};
 
 // ============================================================================
@@ -70,9 +70,13 @@ fn receive_server_commands(
     let receiver = rx.0.lock().unwrap();
     while let Ok(cmd) = receiver.try_recv() {
         match cmd {
-            Command::Say { msg } => {
-                info!("Received Say command: {}", msg);
-                say_events.write(SayEvent { msg });
+            Command::Say { msg, face } => {
+                info!("Received Say command: {} (face: {:?})", msg, face);
+                let face_type = match face.as_deref() {
+                    Some("angry") => FaceType::Angry,
+                    _ => FaceType::Default,
+                };
+                say_events.write(SayEvent { msg, face: face_type });
             }
             Command::Effects {
                 glow,
@@ -122,7 +126,7 @@ fn receive_server_commands(
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type")]
 enum Command {
-    Say { msg: String },
+    Say { msg: String, face: Option<String> },
     Effects {
         glow: bool,
         glow_intensity: f32,
@@ -166,8 +170,8 @@ async fn run(bevy_tx: Sender<Command>, wifi: Arc<dyn WifiManager>) {
 
     let app = Router::new()
         .route("/", get(serve_admin))
-        .route("/admin.css", get(serve_css))
         .route("/admin.js", get(serve_js))
+        .route("/admin.css", get(serve_css))
         .route("/videotype.ttf", get(serve_font))
         .nest("/api", api);
 
@@ -184,11 +188,11 @@ async fn run(bevy_tx: Sender<Command>, wifi: Arc<dyn WifiManager>) {
     }
 }
 
-// Embedded admin assets
-const ADMIN_HTML: &str = include_str!("../assets/admin/index.html");
-const ADMIN_CSS: &str = include_str!("../assets/admin/admin.css");
-const ADMIN_JS: &str = include_str!("../assets/admin/admin.js");
-const ADMIN_FONT: &[u8] = include_bytes!("../assets/admin/videotype.ttf");
+// Embedded admin assets (built by Vite to src/assets/)
+const ADMIN_HTML: &str = include_str!("assets/index.html");
+const ADMIN_JS: &str = include_str!("assets/admin.js");
+const ADMIN_CSS: &str = include_str!("assets/admin.css");
+const ADMIN_FONT: &[u8] = include_bytes!("assets/videotype.ttf");
 
 async fn serve_admin() -> Html<&'static str> {
     Html(ADMIN_HTML)
@@ -228,10 +232,12 @@ async fn health() -> Json<serde_json::Value> {
 #[derive(Deserialize)]
 struct SpeakRequest {
     msg: String,
+    #[serde(default)]
+    face: Option<String>,
 }
 
 async fn speak(State(state): State<AppState>, Json(req): Json<SpeakRequest>) -> StatusCode {
-    let cmd = Command::Say { msg: req.msg };
+    let cmd = Command::Say { msg: req.msg, face: req.face };
     if let Err(e) = state.bevy_tx.send(cmd) {
         error!("Failed to send speak command to Bevy: {}", e);
         return StatusCode::INTERNAL_SERVER_ERROR;

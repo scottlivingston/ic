@@ -20,11 +20,8 @@ A recreation of the IC helper robot from the horror game [ROUTINE](https://store
 ## Quick Start
 
 ```bash
-git clone https://github.com/scottlivingston/ic.git
-cd ic
-./setup.sh              # Install dependencies and build
-sudo ./kiosk-setup.sh   # Configure auto-login and auto-start
-sudo reboot             # Reboot into kiosk mode
+curl -sSL https://raw.githubusercontent.com/scottlivingston/ic/dev/install.sh | sudo bash
+sudo reboot
 ```
 
 ## Control Panel

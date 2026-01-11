@@ -116,7 +116,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         let flicker2 = step(0.90, random(flicker_seed + 0.5)) * 0.6;
         let flicker3 = step(0.85, random(flicker_seed + 1.0)) * 0.8;
         let flicker = max(max(flicker1, flicker2), flicker3);
-        color = mix(color, vec3<f32>(0.0), flicker * settings.flicker_amount);
+        color = mix(color, vec3<f32>(0.0), flicker * settings.flicker_amount * 0.5);
     }
 
     // Apply grid overlay
@@ -147,7 +147,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         let centered = uv - 0.5;
         let dist = length(centered) * 2.0;
         let vignette = smoothstep(0.8, 1.2, dist);
-        color = mix(color, vec3<f32>(0.0), vignette); // fade to black
+        color = color * (1.0 - vignette * 0.5); // dim by up to 50% at edges
     }
 
     // Apply edge fade for smooth antialiased edges on curvature

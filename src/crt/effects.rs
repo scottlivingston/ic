@@ -20,13 +20,14 @@ pub struct CrtEffects {
 impl Default for CrtEffects {
     fn default() -> Self {
         // 50% defaults to match admin menu
+        // Glow disabled: requires face geometry from FacePlugin (not SimpleFacePlugin)
         Self {
-            glow_enabled: true,
+            glow_enabled: false,
             glow_intensity: 0.5,
             scanlines_enabled: true,
             scanline_opacity: 0.5,
             flicker_enabled: true,
-            flicker_amount: 0.3,
+            flicker_amount: 0.5,
             curvature_enabled: true,
             curvature_amount: 50.0,
             grid_enabled: false,

@@ -297,7 +297,8 @@ pub struct MockWifi {
 
 impl MockWifi {
     pub fn new() -> Self {
-        let start_connected = std::env::var("IC_MOCK_CONNECTED").is_ok();
+        // Default to connected; set IC_MOCK_DISCONNECTED=1 to start in onboarding mode
+        let start_connected = std::env::var("IC_MOCK_DISCONNECTED").is_err();
 
         Self {
             state: Mutex::new(MockWifiState {

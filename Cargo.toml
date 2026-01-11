@@ -3,7 +3,12 @@ name = "ic"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+generate-assets = ["image"]
+
 [dependencies]
+image = { version = "0.24", optional = true }
 bevy = { version = "0.17", default-features = false, features = [
     "bevy_asset",
     "bevy_camera",
@@ -18,7 +23,9 @@ bevy = { version = "0.17", default-features = false, features = [
     "multi_threaded",
     "wayland",
     "embedded_watcher",
+    "png",  # Required for PNG image loading
 ] }
+bevy_mesh = "0.17"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }
 # tokio-tungstenite = "0.26"
 axum = "0.8"
