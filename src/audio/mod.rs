@@ -8,7 +8,7 @@ use bevy::log::{error, info};
 use bevy::prelude::*;
 use rodio::{OutputStreamBuilder, Sink};
 
-use crate::face::SpeakingState;
+use crate::simple_face::SpeakingState;
 use crate::events::{SayEvent, VolumeEvent};
 
 pub struct AudioPlugin;

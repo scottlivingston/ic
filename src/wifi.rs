@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use serde::Serialize;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+#[cfg(not(feature = "pi"))]
+use std::sync::Mutex;
 
 pub const HOTSPOT_SSID: &str = "IC-Setup";
 pub const HOTSPOT_PASSWORD: &str = "icsetup123";
@@ -9,6 +11,7 @@ pub const HOTSPOT_IP: &str = "10.42.0.1";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConnectivityStatus {
     Full,
+    #[cfg_attr(not(feature = "pi"), allow(dead_code))]
     Limited,
     None,
 }
@@ -68,8 +71,10 @@ impl WifiService {
 // Real Implementation (NetworkManager/nmcli)
 // ============================================================================
 
+#[cfg(feature = "pi")]
 pub struct NetworkManagerWifi;
 
+#[cfg(feature = "pi")]
 impl WifiManager for NetworkManagerWifi {
     fn check_connectivity(&self) -> ConnectivityStatus {
         use std::process::Command;
@@ -284,6 +289,7 @@ impl WifiManager for NetworkManagerWifi {
 // Mock Implementation (for debug/testing)
 // ============================================================================
 
+#[cfg(not(feature = "pi"))]
 #[derive(Default)]
 struct MockWifiState {
     connected: bool,
@@ -291,10 +297,12 @@ struct MockWifiState {
     connected_ssid: Option<String>,
 }
 
+#[cfg(not(feature = "pi"))]
 pub struct MockWifi {
     state: Mutex<MockWifiState>,
 }
 
+#[cfg(not(feature = "pi"))]
 impl MockWifi {
     pub fn new() -> Self {
         // Default to connected; set IC_MOCK_DISCONNECTED=1 to start in onboarding mode
@@ -305,7 +313,7 @@ impl MockWifi {
                 connected: start_connected,
                 hotspot_active: false,
                 connected_ssid: if start_connected {
-                    Some("MockNetwork".to_string())
+                    Some("HomeWifi".to_string())
                 } else {
                     None
                 },
@@ -314,6 +322,7 @@ impl MockWifi {
     }
 }
 
+#[cfg(not(feature = "pi"))]
 impl WifiManager for MockWifi {
     fn check_connectivity(&self) -> ConnectivityStatus {
         let state = self.state.lock().unwrap();

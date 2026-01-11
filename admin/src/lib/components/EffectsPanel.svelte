@@ -28,20 +28,6 @@
 <Section title="CRT Effects" bind:collapsed>
   <div class="effects-controls">
     <div class="effect-row">
-      <Button active={$effectsState.glow} onclick={() => toggleEffect('glow')}>
-        Glow
-      </Button>
-      <Slider
-        label="Intensity"
-        value={$effectsState.glow_intensity}
-        min={0}
-        max={1}
-        step={0.05}
-        oninput={(v) => updateSlider('glow_intensity', v)}
-      />
-    </div>
-
-    <div class="effect-row">
       <Button active={$effectsState.scanlines} onclick={() => toggleEffect('scanlines')}>
         Scanlines
       </Button>
@@ -52,20 +38,6 @@
         max={1}
         step={0.05}
         oninput={(v) => updateSlider('scanline_opacity', v)}
-      />
-    </div>
-
-    <div class="effect-row">
-      <Button active={$effectsState.flicker} onclick={() => toggleEffect('flicker')}>
-        Flicker
-      </Button>
-      <Slider
-        label="Amount"
-        value={$effectsState.flicker_amount}
-        min={0}
-        max={1}
-        step={0.05}
-        oninput={(v) => updateSlider('flicker_amount', v)}
       />
     </div>
 

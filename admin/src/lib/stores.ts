@@ -2,13 +2,9 @@ import { writable } from 'svelte/store';
 import type { EffectsState, WifiNetwork, HudState } from './types';
 
 export const effectsState = writable<EffectsState>({
-  glow: true,
-  glow_intensity: 0.5,
   scanlines: true,
   scanline_opacity: 0.5,
-  flicker: true,
-  flicker_amount: 0.5,
-  curvature: true,
+  curvature: false,
   curvature_amount: 50,
   grid: false,
 });

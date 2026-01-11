@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
 
 use crate::app_state::AppMode;
 use crate::config::AppConfig;
@@ -81,7 +82,9 @@ fn spawn_ip_hud(mut commands: Commands, asset_server: Res<AssetServer>, hud_stat
         Text2d::new(ip_text),
         text_font,
         TextColor(TEXT_COLOR),
-        Transform::from_xyz(-240.0, -200.0, 1.0),
+        TextLayout::new_with_justify(Justify::Left),
+        Anchor::CENTER_LEFT,
+        Transform::from_xyz(-290.0, -200.0, 1.0),
         Visibility::Visible,
     ));
 

@@ -5,10 +5,10 @@ edition = "2024"
 
 [features]
 default = []
-generate-assets = ["image"]
+diagnostics = []
+pi = []
 
 [dependencies]
-image = { version = "0.24", optional = true }
 bevy = { version = "0.17", default-features = false, features = [
     "bevy_asset",
     "bevy_camera",

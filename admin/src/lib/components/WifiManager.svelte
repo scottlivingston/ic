@@ -1,12 +1,25 @@
 <script lang="ts">
   import { wifiNetworks, wifiScanning, wifiConnecting, selectedNetwork, hudState } from '../stores';
-  import { scanWifi, connectWifi, forgetWifi, fetchHudStatus } from '../api';
+  import { scanWifi, connectWifi, forgetWifi, fetchHudStatus, fetchWifiStatus } from '../api';
+  import type { WifiStatus } from '../types';
   import Section from './ui/Section.svelte';
   import Button from './ui/Button.svelte';
   import TextInput from './ui/TextInput.svelte';
 
   let collapsed = $state(false);
   let password = $state('');
+  let wifiStatus = $state<WifiStatus>({ connected: false, ssid: null, ip_address: null });
+  let statusLoaded = $state(false);
+
+  // Fetch status on mount
+  $effect(() => {
+    if (!statusLoaded) {
+      statusLoaded = true;
+      fetchWifiStatus().then(status => {
+        wifiStatus = status;
+      });
+    }
+  });
 
   async function handleScan() {
     wifiScanning.set(true);
@@ -25,8 +38,10 @@
       alert(`Connected to ${$selectedNetwork}!\nIP: ${result.ip_address || 'unknown'}`);
       selectedNetwork.set(null);
       password = '';
-      const status = await fetchHudStatus();
-      hudState.set(status);
+      // Refresh both HUD and WiFi status
+      const [hudStatus, newWifiStatus] = await Promise.all([fetchHudStatus(), fetchWifiStatus()]);
+      hudState.set(hudStatus);
+      wifiStatus = newWifiStatus;
     } else {
       alert(`Failed to connect: ${result.error || 'Unknown error'}`);
     }
@@ -38,6 +53,8 @@
     if (confirm(`Forget network "${ssid}"?`)) {
       const result = await forgetWifi(ssid);
       if (result.success) {
+        // Refresh status and network list
+        wifiStatus = await fetchWifiStatus();
         await handleScan();
       } else {
         alert(`Failed to forget network: ${result.error || 'Unknown error'}`);
@@ -59,6 +76,17 @@
 
 <Section title="WiFi" bind:collapsed>
   <div class="wifi-controls">
+    {#if wifiStatus.connected && wifiStatus.ssid}
+      <div class="wifi-status">
+        <span class="wifi-status-label">Connected:</span>
+        <span class="wifi-status-ssid">{wifiStatus.ssid}</span>
+      </div>
+    {:else if statusLoaded}
+      <div class="wifi-status wifi-status-disconnected">
+        Not connected
+      </div>
+    {/if}
+
     <Button onclick={handleScan} disabled={$wifiScanning}>
       {$wifiScanning ? 'Scanning...' : 'Scan Networks'}
     </Button>
@@ -116,6 +144,27 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
+  }
+
+  .wifi-status {
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: var(--border);
+    background: var(--color-bg-active);
+  }
+
+  .wifi-status-label {
+    opacity: 0.7;
+  }
+
+  .wifi-status-ssid {
+    font-weight: bold;
+  }
+
+  .wifi-status-disconnected {
+    opacity: 0.5;
+    background: var(--color-bg);
   }
 
   .wifi-networks {

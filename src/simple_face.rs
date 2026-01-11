@@ -10,7 +10,24 @@ use std::collections::HashMap;
 
 use crate::app_state::AppMode;
 use crate::events::FaceType;
-use crate::face::SpeakingState;
+
+/// Shared resource to track speaking state between face and audio modules
+#[derive(Resource, Default)]
+pub struct SpeakingState {
+    pub speaking: bool,
+    pub face_type: FaceType,
+}
+
+impl SpeakingState {
+    pub fn start_speaking(&mut self, face: FaceType) {
+        self.speaking = true;
+        self.face_type = face;
+    }
+
+    pub fn stop_speaking(&mut self) {
+        self.speaking = false;
+    }
+}
 
 /// Virtual pixel size in real pixels
 const PIXEL_SIZE: f32 = 16.0;

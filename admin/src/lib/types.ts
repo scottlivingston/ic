@@ -1,10 +1,6 @@
 export interface EffectsState {
-  glow: boolean;
-  glow_intensity: number;
   scanlines: boolean;
   scanline_opacity: number;
-  flicker: boolean;
-  flicker_amount: number;
   curvature: boolean;
   curvature_amount: number;
   grid: boolean;
@@ -31,4 +27,10 @@ export interface WifiConnectResponse {
 export interface WifiForgetResponse {
   success: boolean;
   error?: string;
+}
+
+export interface WifiStatus {
+  connected: boolean;
+  ssid: string | null;
+  ip_address: string | null;
 }

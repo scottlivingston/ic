@@ -1,5 +1,3 @@
-#![allow(dead_code)] // ShaderType derive generates unused check functions
-
 pub mod effects;
 
 use bevy::{
@@ -29,8 +27,6 @@ use bevy::{
 };
 
 use effects::{update_effects_from_events, CrtEffects};
-
-use crate::face::{EYE_GAP, EYE_HEIGHT, EYE_WIDTH, FACE_Y_OFFSET, MOUTH_BASE_Y, MOUTH_HEIGHT, MOUTH_WIDTH, Mouth};
 
 pub struct CrtPlugin;
 
@@ -69,35 +65,21 @@ struct CrtLabel;
 /// Boolean flags use u32 instead of bool for WGSL shader compatibility.
 #[derive(Component, Default, Clone, Copy, ExtractComponent)]
 pub struct CrtSettings {
-    pub glow_enabled: u32,
-    pub glow_intensity: f32,
     pub scanlines_enabled: u32,
     pub scanline_opacity: f32,
-    pub flicker_enabled: u32,
-    pub flicker_amount: f32,
     pub curvature_enabled: u32,
     pub curvature_amount: f32,
     pub grid_enabled: u32,
     pub time: f32,
     pub screen_width: f32,
     pub screen_height: f32,
-    // Face geometry for SDF glow
-    pub left_eye_pos: Vec2,
-    pub right_eye_pos: Vec2,
-    pub eye_half_size: Vec2,
-    pub mouth_pos: Vec2,
-    pub mouth_half_size: Vec2,
 }
 
 impl CrtSettings {
     /// Apply effect settings from CrtEffects resource
     fn apply_from(&mut self, effects: &CrtEffects) {
-        self.glow_enabled = effects.glow_enabled as u32;
-        self.glow_intensity = effects.glow_intensity;
         self.scanlines_enabled = effects.scanlines_enabled as u32;
         self.scanline_opacity = effects.scanline_opacity;
-        self.flicker_enabled = effects.flicker_enabled as u32;
-        self.flicker_amount = effects.flicker_amount;
         self.curvature_enabled = effects.curvature_enabled as u32;
         self.curvature_amount = effects.curvature_amount;
         self.grid_enabled = effects.grid_enabled as u32;
@@ -107,44 +89,25 @@ impl CrtSettings {
 #[derive(ShaderType, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct CrtSettingsUniform {
-    glow_enabled: u32,
-    glow_intensity: f32,
     scanlines_enabled: u32,
     scanline_opacity: f32,
-    flicker_enabled: u32,
-    flicker_amount: f32,
     curvature_enabled: u32,
     curvature_amount: f32,
     grid_enabled: u32,
     time: f32,
     screen_size: Vec2,
-    // Face geometry for SDF glow
-    left_eye_pos: Vec2,
-    right_eye_pos: Vec2,
-    eye_half_size: Vec2,
-    mouth_pos: Vec2,
-    mouth_half_size: Vec2,
 }
 
 impl From<&CrtSettings> for CrtSettingsUniform {
     fn from(settings: &CrtSettings) -> Self {
         Self {
-            glow_enabled: settings.glow_enabled,
-            glow_intensity: settings.glow_intensity,
             scanlines_enabled: settings.scanlines_enabled,
             scanline_opacity: settings.scanline_opacity,
-            flicker_enabled: settings.flicker_enabled,
-            flicker_amount: settings.flicker_amount,
             curvature_enabled: settings.curvature_enabled,
             curvature_amount: settings.curvature_amount,
             grid_enabled: settings.grid_enabled,
             time: settings.time,
             screen_size: Vec2::new(settings.screen_width, settings.screen_height),
-            left_eye_pos: settings.left_eye_pos,
-            right_eye_pos: settings.right_eye_pos,
-            eye_half_size: settings.eye_half_size,
-            mouth_pos: settings.mouth_pos,
-            mouth_half_size: settings.mouth_half_size,
         }
     }
 }
@@ -154,7 +117,6 @@ fn sync_crt_settings(
     time: Res<Time>,
     windows: Query<&Window>,
     mut cameras: Query<&mut CrtSettings, With<Camera2d>>,
-    mouth_query: Query<(&Sprite, &Transform), With<Mouth>>,
 ) {
     let Ok(window) = windows.single() else {
         return;
@@ -167,22 +129,6 @@ fn sync_crt_settings(
     settings.time = time.elapsed_secs();
     settings.screen_width = window.width();
     settings.screen_height = window.height();
-
-    // Face geometry for SDF glow (from face.rs constants)
-    settings.left_eye_pos = Vec2::new(-EYE_GAP / 2.0 - MOUTH_WIDTH / 2.0, FACE_Y_OFFSET);
-    settings.right_eye_pos = Vec2::new(EYE_GAP / 2.0 + MOUTH_WIDTH / 2.0, FACE_Y_OFFSET);
-    settings.eye_half_size = Vec2::new(EYE_WIDTH / 2.0, EYE_HEIGHT / 2.0);
-
-    // Get mouth geometry from actual sprite (follows animation)
-    if let Ok((sprite, transform)) = mouth_query.single() {
-        let size = sprite.custom_size.unwrap_or(Vec2::new(MOUTH_WIDTH, MOUTH_HEIGHT));
-        settings.mouth_pos = transform.translation.truncate();
-        settings.mouth_half_size = size / 2.0;
-    } else {
-        // Fallback to static values if mouth not found
-        settings.mouth_pos = Vec2::new(0.0, MOUTH_BASE_Y);
-        settings.mouth_half_size = Vec2::new(MOUTH_WIDTH / 2.0, MOUTH_HEIGHT / 2.0);
-    }
 }
 
 #[derive(Default)]

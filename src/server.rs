@@ -79,24 +79,16 @@ fn receive_server_commands(
                 say_events.write(SayEvent { msg, face: face_type });
             }
             Command::Effects {
-                glow,
-                glow_intensity,
                 scanlines,
                 scanline_opacity,
-                flicker,
-                flicker_amount,
                 curvature,
                 curvature_amount,
                 grid,
             } => {
                 info!("Received Effects command");
                 effects_events.write(EffectsEvent {
-                    glow,
-                    glow_intensity,
                     scanlines,
                     scanline_opacity,
-                    flicker,
-                    flicker_amount,
                     curvature,
                     curvature_amount,
                     grid,
@@ -128,12 +120,8 @@ fn receive_server_commands(
 enum Command {
     Say { msg: String, face: Option<String> },
     Effects {
-        glow: bool,
-        glow_intensity: f32,
         scanlines: bool,
         scanline_opacity: f32,
-        flicker: bool,
-        flicker_amount: f32,
         curvature: bool,
         curvature_amount: f32,
         grid: bool,
@@ -247,12 +235,8 @@ async fn speak(State(state): State<AppState>, Json(req): Json<SpeakRequest>) -> 
 
 #[derive(Deserialize)]
 struct EffectsRequest {
-    glow: bool,
-    glow_intensity: f32,
     scanlines: bool,
     scanline_opacity: f32,
-    flicker: bool,
-    flicker_amount: f32,
     curvature: bool,
     curvature_amount: f32,
     grid: bool,
@@ -260,12 +244,8 @@ struct EffectsRequest {
 
 async fn effects(State(state): State<AppState>, Json(req): Json<EffectsRequest>) -> StatusCode {
     let cmd = Command::Effects {
-        glow: req.glow,
-        glow_intensity: req.glow_intensity,
         scanlines: req.scanlines,
         scanline_opacity: req.scanline_opacity,
-        flicker: req.flicker,
-        flicker_amount: req.flicker_amount,
         curvature: req.curvature,
         curvature_amount: req.curvature_amount,
         grid: req.grid,

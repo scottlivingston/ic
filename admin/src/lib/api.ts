@@ -1,4 +1,4 @@
-import type { EffectsState, WifiNetwork, HudState, WifiConnectResponse, WifiForgetResponse } from './types';
+import type { EffectsState, WifiNetwork, HudState, WifiConnectResponse, WifiForgetResponse, WifiStatus } from './types';
 
 export async function sendSpeak(msg: string, face?: string): Promise<void> {
   try {
@@ -93,6 +93,18 @@ export async function forgetWifi(ssid: string): Promise<WifiForgetResponse> {
     console.error('Error forgetting WiFi:', err);
     return { success: false, error: 'Request error' };
   }
+}
+
+export async function fetchWifiStatus(): Promise<WifiStatus> {
+  try {
+    const response = await fetch('/api/wifi/status');
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (err) {
+    console.error('Error fetching WiFi status:', err);
+  }
+  return { connected: false, ssid: null, ip_address: null };
 }
 
 export async function fetchHudStatus(): Promise<HudState> {

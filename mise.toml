@@ -22,7 +22,7 @@ run = "cargo build"
 [tasks.build-pi]
 description = "Cross-compile for Pi Zero 2 W (aarch64)"
 depends = ["build-ui"]
-run = "cross build --release --target aarch64-unknown-linux-gnu"
+run = "cross build --release --target aarch64-unknown-linux-gnu --features pi"
 
 [tasks.generate-faces]
 description = "Generate pre-rendered face assets for SpriteFacePlugin"
