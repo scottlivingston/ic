@@ -26,7 +26,12 @@ pub fn create_transitions(
     // Collect all tables for indexed access
     // 0=pitches, 1=freq1, 2=freq2, 3=freq3, 4=amp1, 5=amp2, 6=amp3
 
-    let read = |table: usize, pos: usize, pitches: &[u8], frequency: &[Vec<u8>; 3], amplitude: &[Vec<u8>; 3]| -> i32 {
+    let read = |table: usize,
+                pos: usize,
+                pitches: &[u8],
+                frequency: &[Vec<u8>; 3],
+                amplitude: &[Vec<u8>; 3]|
+     -> i32 {
         match table {
             0 => pitches.get(pos).copied().unwrap_or(0) as i32,
             1 => frequency[0].get(pos).copied().unwrap_or(0) as i32,
@@ -39,7 +44,12 @@ pub fn create_transitions(
         }
     };
 
-    let write = |table: usize, pos: usize, val: i32, pitches: &mut [u8], frequency: &mut [Vec<u8>; 3], amplitude: &mut [Vec<u8>; 3]| {
+    let write = |table: usize,
+                 pos: usize,
+                 val: i32,
+                 pitches: &mut [u8],
+                 frequency: &mut [Vec<u8>; 3],
+                 amplitude: &mut [Vec<u8>; 3]| {
         let val = (val & 0xFF) as u8;
         match table {
             0 => {
@@ -82,7 +92,13 @@ pub fn create_transitions(
     };
 
     // Linearly interpolate values
-    let interpolate = |width: i32, table: usize, frame: usize, change: i32, pitches: &mut [u8], frequency: &mut [Vec<u8>; 3], amplitude: &mut [Vec<u8>; 3]| {
+    let interpolate = |width: i32,
+                       table: usize,
+                       frame: usize,
+                       change: i32,
+                       pitches: &mut [u8],
+                       frequency: &mut [Vec<u8>; 3],
+                       amplitude: &mut [Vec<u8>; 3]| {
         if width <= 0 {
             return;
         }

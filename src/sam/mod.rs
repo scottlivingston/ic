@@ -148,7 +148,12 @@ mod tests {
             let samples = result.unwrap();
             assert!(!samples.is_empty(), "Empty samples for phrase: {}", phrase);
             // Long phrases should produce significant audio
-            assert!(samples.len() > 1000, "Too few samples for phrase: {} (got {})", phrase, samples.len());
+            assert!(
+                samples.len() > 1000,
+                "Too few samples for phrase: {} (got {})",
+                phrase,
+                samples.len()
+            );
         }
     }
 }

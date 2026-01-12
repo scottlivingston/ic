@@ -121,7 +121,6 @@ pub const RULES: &str = concat!(
     " (AT) =AET|",
     " (A)T=AH|",
     "(A)=AE|",
-
     " (B) =BIY4|",
     " (BE)^#=BIH|",
     "(BEING)=BIY4IHNX|",
@@ -130,7 +129,6 @@ pub const RULES: &str = concat!(
     "(BREAK)=BREY5K|",
     "(BUIL)=BIH4L|",
     "(B)=B|",
-
     " (C) =SIY4|",
     " (CH)^=K|",
     "^E(CH)=K|",
@@ -148,7 +146,6 @@ pub const RULES: &str = concat!(
     "(CUIT)=KIHT|",
     "(CREA)=KRIYEY|",
     "(C)=K|",
-
     " (D) =DIY4|",
     " (DR.) =DAA4KTER|",
     "#:(DED) =DIHD|",
@@ -163,7 +160,6 @@ pub const RULES: &str = concat!(
     "#(DU)A=JUW|",
     "#(DU)^#=JAX|",
     "(D)=D|",
-
     " (E) =IYIY4|",
     "#:(E) =|",
     "''^(E) =|",
@@ -203,14 +199,12 @@ pub const RULES: &str = concat!(
     "(EU)=YUW5|",
     "(EQUAL)=IY4KWUL|",
     "(E)=EH|",
-
     " (F) =EH4F|",
     "(FUL)=FUHL|",
     "(FRIEND)=FREH5ND|",
     "(FATHER)=FAA4DHER|",
     "(F)F=|",
     "(F)=F|",
-
     " (G) =JIY4|",
     "(GIV)=GIH5V|",
     " (G)I^=G|",
@@ -224,7 +218,6 @@ pub const RULES: &str = concat!(
     "#(GH)=|",
     " (GN)=N|",
     "(G)=G|",
-
     " (H) =EY4CH|",
     " (HAV)=/HAE6V|",
     " (HERE)=/HIYR|",
@@ -232,7 +225,6 @@ pub const RULES: &str = concat!(
     "(HOW)=/HAW|",
     "(H)#=/H|",
     "(H)=|",
-
     " (IN)=IHN|",
     " (I) =AY4|",
     "(I) =AY|",
@@ -268,14 +260,11 @@ pub const RULES: &str = concat!(
     "(ICRO)=AY4KROH|",
     "(IQUE)=IY4K|",
     "(I)=IH|",
-
     " (J) =JEY4|",
     "(J)=J|",
-
     " (K) =KEY4|",
     " (K)N=|",
     "(K)=K|",
-
     " (L) =EH4L|",
     "(LO)C#=LOW|",
     "L(L)=|",
@@ -283,7 +272,6 @@ pub const RULES: &str = concat!(
     "(LEAD)=LIYD|",
     " (LAUGH)=LAE4F|",
     "(L)=L|",
-
     " (M) =EH4M|",
     " (MR.) =MIH4STER|",
     " (MS.)=MIH5Z|",
@@ -292,7 +280,6 @@ pub const RULES: &str = concat!(
     "(MACHIN)=MAHSHIY5N|",
     "M(M)=|",
     "(M)=M|",
-
     " (N) =EH4N|",
     "E(NG)+=NJ|",
     "(NG)R=NXG|",
@@ -304,7 +291,6 @@ pub const RULES: &str = concat!(
     "N(N)=|",
     "(NON)E=NAH4N|",
     "(N)=N|",
-
     " (O) =OH4W|",
     "(OF) =AHV|",
     " (OH) =OW5|",
@@ -364,7 +350,6 @@ pub const RULES: &str = concat!(
     "(OSS) =AO5S|",
     "#:^(OM)=AHM|",
     "(O)=AA|",
-
     " (P) =PIY4|",
     "(PH)=F|",
     "(PEOPL)=PIY5PUL|",
@@ -375,17 +360,14 @@ pub const RULES: &str = concat!(
     "(P)N=|",
     "(PROF.)=PROHFEH4SER|",
     "(P)=P|",
-
     " (Q) =KYUW4|",
     "(QUAR)=KWOH5R|",
     "(QU)=KW|",
     "(Q)=K|",
-
     " (R) =AA5R|",
     " (RE)^#=RIY|",
     "(R)R=|",
     "(R)=R|",
-
     " (S) =EH4S|",
     "(SH)=SH|",
     "#(SION)=ZHUN|",
@@ -411,7 +393,6 @@ pub const RULES: &str = concat!(
     "#(SN)'=ZUM|",
     "(STLE)=SUL|",
     "(S)=S|",
-
     " (T) =TIY4|",
     " (THE) #=DHIY|",
     " (THE) =DHAX|",
@@ -444,7 +425,6 @@ pub const RULES: &str = concat!(
     " (TWO)=TUW|",
     "&(T)EN =|",
     "(T)=T|",
-
     " (U) =YUW4|",
     " (UN)I=YUWN|",
     " (UN)=AHN|",
@@ -461,11 +441,9 @@ pub const RULES: &str = concat!(
     "#N(U)=YUW|",
     "@(U)=UW|",
     "(U)=YUW|",
-
     " (V) =VIY4|",
     "(VIEW)=VYUW5|",
     "(V)=V|",
-
     " (W) =DAH4BULYUW|",
     " (WERE)=WER|",
     "(WA)SH=WAA|",
@@ -487,11 +465,9 @@ pub const RULES: &str = concat!(
     "(WANT)=WAA5NT|",
     "ANS(WER)=ER|",
     "(W)=W|",
-
     " (X) =EH4KR|",
     " (X)=Z|",
     "(X)=KS|",
-
     " (Y) =WAY4|",
     "(YOUNG)=YAHNX|",
     " (YOUR)=YOHR|",
@@ -507,7 +483,6 @@ pub const RULES: &str = concat!(
     " :(Y)^+:#=IH|",
     " :(Y)^#=AY|",
     "(Y)=IH|",
-
     " (Z) =ZIY4|",
     "(Z)=Z"
 );

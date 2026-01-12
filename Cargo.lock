@@ -2375,6 +2375,7 @@ dependencies = [
  "bevy_mesh",
  "bytemuck",
  "dirs",
+ "image",
  "rodio",
  "serde",
  "serde_json",

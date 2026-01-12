@@ -2,9 +2,7 @@
 
 pub mod tables;
 
-use tables::{
-    find_phoneme, phoneme_length, phoneme_stressed_length, PHONEME_FLAGS, STRESS_TABLE,
-};
+use tables::{PHONEME_FLAGS, STRESS_TABLE, find_phoneme, phoneme_length, phoneme_stressed_length};
 
 use crate::sam::constants::*;
 
@@ -140,7 +138,15 @@ fn apply_parser2(
             // Handle diphthongs - insert second part (WX or YX)
             if (flags & FLAG_DIPHTHONG) != 0 {
                 let second = if (flags & FLAG_DIP_YX) != 0 { 21 } else { 20 };
-                insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, second, stress[i], 0);
+                insert_phoneme(
+                    phoneme_index,
+                    phoneme_len,
+                    stress,
+                    i + 1,
+                    second,
+                    stress[i],
+                    0,
+                );
                 i += 2;
                 continue;
             }
@@ -242,11 +248,7 @@ fn copy_stress(phoneme_index: &[usize], stress: &mut [usize]) {
 }
 
 /// Set phoneme lengths based on stress
-fn set_phoneme_length(
-    phoneme_index: &[usize],
-    stress: &[usize],
-    phoneme_len: &mut [usize],
-) {
+fn set_phoneme_length(phoneme_index: &[usize], stress: &[usize], phoneme_len: &mut [usize]) {
     for (i, &phoneme) in phoneme_index.iter().enumerate() {
         if phoneme == 0 {
             continue;
@@ -313,8 +315,24 @@ fn prolong_plosives(
             // Use proper lengths from the phoneme length table
             let len1 = phoneme_length(phoneme + 1) as usize;
             let len2 = phoneme_length(phoneme + 2) as usize;
-            insert_phoneme(phoneme_index, phoneme_len, stress, i + 1, phoneme + 1, stress[i], len1);
-            insert_phoneme(phoneme_index, phoneme_len, stress, i + 2, phoneme + 2, stress[i], len2);
+            insert_phoneme(
+                phoneme_index,
+                phoneme_len,
+                stress,
+                i + 1,
+                phoneme + 1,
+                stress[i],
+                len1,
+            );
+            insert_phoneme(
+                phoneme_index,
+                phoneme_len,
+                stress,
+                i + 2,
+                phoneme + 2,
+                stress[i],
+                len2,
+            );
             i += 2;
         }
 

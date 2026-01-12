@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { hudState } from './lib/stores';
+  import { hudState, phrasesEditMode } from './lib/stores';
   import { fetchHudStatus, toggleIpHud } from './lib/api';
 
   import EffectsPanel from './lib/components/EffectsPanel.svelte';
@@ -44,6 +44,7 @@
     <Button variant="icon" active={showCRT} onclick={() => showCRT = !showCRT}>CRT</Button>
     <Button variant="icon" active={showVol} onclick={() => showVol = !showVol}>VOL</Button>
     <Button variant="icon" active={showWifi} onclick={() => showWifi = !showWifi}>WIFI</Button>
+    <Button variant="icon" active={$phrasesEditMode} onclick={() => phrasesEditMode.update(v => !v)}>EDIT</Button>
     <Button variant="icon" active={$hudState.show_ip} onclick={handleToggleIp}>IP</Button>
   </nav>
 </header>

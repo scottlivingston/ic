@@ -60,7 +60,7 @@ fn load_hud_config(
 }
 
 fn spawn_ip_hud(mut commands: Commands, asset_server: Res<AssetServer>, hud_state: Res<HudState>) {
-    let font = asset_server.load("embedded://ic/assets/videotype.ttf");
+    let font = asset_server.load("embedded://ic/assets/admin/videotype.ttf");
 
     let text_font = TextFont {
         font,

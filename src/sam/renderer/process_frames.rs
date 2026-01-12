@@ -1,7 +1,7 @@
 //! Process frames to generate audio output
 
 use super::output_buffer::OutputBuffer;
-use super::tables::{SAMPLED_CONSONANT_VALUES_0, SAMPLE_TABLE};
+use super::tables::{SAMPLE_TABLE, SAMPLED_CONSONANT_VALUES_0};
 use std::f32::consts::PI;
 
 /// Calculate sine value for audio synthesis
@@ -24,7 +24,12 @@ fn render_sample(
     let sample_page = (kind * 256) & 0xFFFF;
     let mut off = consonant_flag & 248;
 
-    let render_sample_inner = |output: &mut OutputBuffer, off: u8, index1: usize, value1: u8, index0: usize, value0: u8| {
+    let render_sample_inner = |output: &mut OutputBuffer,
+                               off: u8,
+                               index1: usize,
+                               value1: u8,
+                               index0: usize,
+                               value0: u8| {
         let sample_idx = sample_page + (off as usize);
         if sample_idx >= SAMPLE_TABLE.len() {
             return;
@@ -120,7 +125,11 @@ pub fn process_frames(
             for k in 0..5 {
                 let sp1 = sinus(((p1 >> 8) & 0xFF) as u8);
                 let sp2 = sinus(((p2 >> 8) & 0xFF) as u8);
-                let rp3: i32 = if ((p3 >> 8) & 0xFF) < 129 { -0x70 } else { 0x70 };
+                let rp3: i32 = if ((p3 >> 8) & 0xFF) < 129 {
+                    -0x70
+                } else {
+                    0x70
+                };
 
                 let amp0 = (amplitude[0].get(pos).copied().unwrap_or(0) & 0x0F) as i32;
                 let amp1 = (amplitude[1].get(pos).copied().unwrap_or(0) & 0x0F) as i32;

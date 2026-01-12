@@ -34,3 +34,20 @@ export interface WifiStatus {
   ssid: string | null;
   ip_address: string | null;
 }
+
+export interface PresetPhrase {
+  text: string;
+  face?: string;
+}
+
+export interface Settings {
+  show_ip: boolean;
+  volume: number;
+  crt_effects: EffectsState;
+  phrases: PresetPhrase[];
+}
+
+export interface SavePhrasesResponse {
+  success: boolean;
+  error?: string;
+}

@@ -61,7 +61,11 @@ pub fn set_mouth_throat(mouth: u8, throat: u8) -> FreqData {
         freq2[pos] = trans(throat, freq2[pos]);
     }
 
-    FreqData { freq1, freq2, freq3 }
+    FreqData {
+        freq1,
+        freq2,
+        freq3,
+    }
 }
 
 #[cfg(test)]

@@ -47,7 +47,7 @@ impl Default for DiagnosticsState {
 const TEXT_COLOR: Color = Color::srgb(0.8, 1.0, 0.933);
 
 fn spawn_diagnostics_display(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font = asset_server.load("embedded://ic/assets/videotype.ttf");
+    let font = asset_server.load("embedded://ic/assets/admin/videotype.ttf");
 
     // Note: Text2d won't be visible with pixel_face (fullscreen post-process covers it)
     // For pixel_face testing, judge performance by smoothness rather than FPS numbers
@@ -65,7 +65,10 @@ fn spawn_diagnostics_display(mut commands: Commands, asset_server: Res<AssetServ
     ));
 }
 
-fn despawn_diagnostics_display(mut commands: Commands, query: Query<Entity, With<DiagnosticsDisplay>>) {
+fn despawn_diagnostics_display(
+    mut commands: Commands,
+    query: Query<Entity, With<DiagnosticsDisplay>>,
+) {
     for entity in query.iter() {
         commands.entity(entity).despawn();
     }

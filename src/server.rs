@@ -1,12 +1,12 @@
 use std::sync::mpsc::Sender;
-use std::sync::{mpsc, Mutex};
+use std::sync::{Mutex, mpsc};
 
 use axum::{
-    extract::State,
-    http::{header, StatusCode},
+    Json, Router,
+    extract::{Path, State},
+    http::{StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Json, Router,
 };
 use bevy::log::{error, info};
 use bevy::prelude::*;
@@ -14,8 +14,12 @@ use serde::{Deserialize, Serialize};
 
 use std::sync::Arc;
 
-use crate::config::AppConfig;
-use crate::events::{EffectsEvent, FaceType, SayEvent, ToggleHudEvent, VolumeEvent, WifiConnectedEvent};
+use crate::assets::{ADMIN_CSS, ADMIN_FONT, ADMIN_HTML, ADMIN_JS};
+use crate::config::{AppConfig, CrtEffectsConfig, PresetPhrase};
+use crate::events::{
+    EffectsEvent, FaceType, SayEvent, ToggleHudEvent, VolumeEvent, WifiConnectedEvent,
+};
+use crate::face_library::FaceLibrary;
 use crate::wifi::{self, ConnectivityStatus, WifiManager, WifiService};
 
 // ============================================================================
@@ -40,10 +44,20 @@ impl Plugin for ServerPlugin {
             .0
             .clone();
 
+        // Get available face names from FaceLibrary
+        let face_names: Vec<String> = app
+            .world()
+            .get_resource::<FaceLibrary>()
+            .expect("FaceLibrary must be inserted before ServerPlugin")
+            .list_faces()
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
+
         // Spawn web server in background thread
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
-            rt.block_on(run(tx, wifi));
+            rt.block_on(run(tx, wifi, face_names));
         });
 
         info!("Web server starting on http://localhost:3000");
@@ -72,11 +86,14 @@ fn receive_server_commands(
         match cmd {
             Command::Say { msg, face } => {
                 info!("Received Say command: {} (face: {:?})", msg, face);
-                let face_type = match face.as_deref() {
-                    Some("angry") => FaceType::Angry,
-                    _ => FaceType::Default,
+                let face_type = match face {
+                    Some(name) => FaceType::new(name),
+                    None => FaceType::default(),
                 };
-                say_events.write(SayEvent { msg, face: face_type });
+                say_events.write(SayEvent {
+                    msg,
+                    face: face_type,
+                });
             }
             Command::Effects {
                 scanlines,
@@ -118,7 +135,10 @@ fn receive_server_commands(
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type")]
 enum Command {
-    Say { msg: String, face: Option<String> },
+    Say {
+        msg: String,
+        face: Option<String>,
+    },
     Effects {
         scanlines: bool,
         scanline_opacity: f32,
@@ -126,9 +146,15 @@ enum Command {
         curvature_amount: f32,
         grid: bool,
     },
-    Volume { volume: f32 },
-    ToggleIpHud { show: bool },
-    WifiConnected { ip: String },
+    Volume {
+        volume: f32,
+    },
+    ToggleIpHud {
+        show: bool,
+    },
+    WifiConnected {
+        ip: String,
+    },
 }
 
 #[derive(Clone)]
@@ -137,23 +163,34 @@ struct AppState {
     bevy_tx: Sender<Command>,
     /// WiFi manager for network operations
     wifi: Arc<dyn WifiManager>,
+    /// Available face names
+    face_names: Vec<String>,
 }
 
 /// Run the web server
-async fn run(bevy_tx: Sender<Command>, wifi: Arc<dyn WifiManager>) {
-    let state = AppState { bevy_tx, wifi };
+async fn run(bevy_tx: Sender<Command>, wifi: Arc<dyn WifiManager>, face_names: Vec<String>) {
+    let state = AppState {
+        bevy_tx,
+        wifi,
+        face_names,
+    };
 
     let api = Router::new()
         .route("/health", get(health))
         .route("/speak", post(speak))
         .route("/effects", post(effects))
         .route("/volume", post(volume))
+        .route("/settings", get(get_settings))
+        .route("/phrases", get(get_phrases))
+        .route("/phrases", post(save_phrases))
         .route("/wifi/scan", get(wifi_scan))
         .route("/wifi/connect", post(wifi_connect))
         .route("/wifi/forget", post(wifi_forget))
         .route("/wifi/status", get(wifi_status))
         .route("/hud/ip", post(hud_toggle))
         .route("/hud/status", get(hud_status))
+        .route("/faces", get(list_faces))
+        .route("/faces/{name}", get(serve_face_image))
         .with_state(state.clone());
 
     let app = Router::new()
@@ -166,7 +203,10 @@ async fn run(bevy_tx: Sender<Command>, wifi: Arc<dyn WifiManager>) {
     let listener = match tokio::net::TcpListener::bind("0.0.0.0:3000").await {
         Ok(l) => l,
         Err(e) => {
-            error!("Failed to bind to port 3000: {}. Is another instance running?", e);
+            error!(
+                "Failed to bind to port 3000: {}. Is another instance running?",
+                e
+            );
             return;
         }
     };
@@ -175,12 +215,6 @@ async fn run(bevy_tx: Sender<Command>, wifi: Arc<dyn WifiManager>) {
         error!("Server error: {}", e);
     }
 }
-
-// Embedded admin assets (built by Vite to src/assets/)
-const ADMIN_HTML: &str = include_str!("assets/index.html");
-const ADMIN_JS: &str = include_str!("assets/admin.js");
-const ADMIN_CSS: &str = include_str!("assets/admin.css");
-const ADMIN_FONT: &[u8] = include_bytes!("assets/videotype.ttf");
 
 async fn serve_admin() -> Html<&'static str> {
     Html(ADMIN_HTML)
@@ -225,7 +259,10 @@ struct SpeakRequest {
 }
 
 async fn speak(State(state): State<AppState>, Json(req): Json<SpeakRequest>) -> StatusCode {
-    let cmd = Command::Say { msg: req.msg, face: req.face };
+    let cmd = Command::Say {
+        msg: req.msg,
+        face: req.face,
+    };
     if let Err(e) = state.bevy_tx.send(cmd) {
         error!("Failed to send speak command to Bevy: {}", e);
         return StatusCode::INTERNAL_SERVER_ERROR;
@@ -254,6 +291,20 @@ async fn effects(State(state): State<AppState>, Json(req): Json<EffectsRequest>)
         error!("Failed to send effects command to Bevy: {}", e);
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
+
+    // Save effects to config
+    let mut config = AppConfig::load();
+    config.crt_effects = CrtEffectsConfig {
+        scanlines: req.scanlines,
+        scanline_opacity: req.scanline_opacity,
+        curvature: req.curvature,
+        curvature_amount: req.curvature_amount,
+        grid: req.grid,
+    };
+    if let Err(e) = config.save() {
+        error!("Failed to save config: {}", e);
+    }
+
     StatusCode::OK
 }
 
@@ -268,7 +319,71 @@ async fn volume(State(state): State<AppState>, Json(req): Json<VolumeRequest>) -
         error!("Failed to send volume command to Bevy: {}", e);
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
+
+    // Save volume to config
+    let mut config = AppConfig::load();
+    config.volume = req.volume;
+    if let Err(e) = config.save() {
+        error!("Failed to save config: {}", e);
+    }
+
     StatusCode::OK
+}
+
+// ============================================================================
+// Settings & Phrases Endpoints
+// ============================================================================
+
+#[derive(Serialize)]
+struct SettingsResponse {
+    show_ip: bool,
+    volume: f32,
+    crt_effects: CrtEffectsConfig,
+    phrases: Vec<PresetPhrase>,
+}
+
+async fn get_settings(State(state): State<AppState>) -> Json<SettingsResponse> {
+    let config = AppConfig::load();
+    let wifi = state.wifi.clone();
+    let _ip_address = tokio::task::spawn_blocking(move || wifi.get_ip_address())
+        .await
+        .ok()
+        .flatten();
+
+    Json(SettingsResponse {
+        show_ip: config.show_ip,
+        volume: config.volume,
+        crt_effects: config.crt_effects,
+        phrases: config.phrases,
+    })
+}
+
+async fn get_phrases() -> Json<Vec<PresetPhrase>> {
+    let config = AppConfig::load();
+    Json(config.phrases)
+}
+
+#[derive(Serialize)]
+struct SavePhrasesResponse {
+    success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+async fn save_phrases(Json(phrases): Json<Vec<PresetPhrase>>) -> Json<SavePhrasesResponse> {
+    let mut config = AppConfig::load();
+    config.phrases = phrases;
+
+    match config.save() {
+        Ok(()) => Json(SavePhrasesResponse {
+            success: true,
+            error: None,
+        }),
+        Err(e) => Json(SavePhrasesResponse {
+            success: false,
+            error: Some(e.to_string()),
+        }),
+    }
 }
 
 // ============================================================================
@@ -461,4 +576,21 @@ async fn hud_status(State(state): State<AppState>) -> Json<HudStatusResponse> {
         show_ip: config.show_ip,
         ip_address,
     })
+}
+
+// ============================================================================
+// Face Endpoints
+// ============================================================================
+
+async fn list_faces(State(state): State<AppState>) -> Json<Vec<String>> {
+    Json(state.face_names.clone())
+}
+
+async fn serve_face_image(Path(name): Path<String>) -> Response {
+    match FaceLibrary::get_embedded_image(&name) {
+        Some(bytes) => {
+            (StatusCode::OK, [(header::CONTENT_TYPE, "image/png")], bytes).into_response()
+        }
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
 }

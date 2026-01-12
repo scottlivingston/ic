@@ -3,17 +3,23 @@ use bevy::prelude::*;
 
 use crate::app_state::AppMode;
 use crate::events::WifiConnectedEvent;
-use crate::wifi::{ConnectivityStatus, WifiService, HOTSPOT_IP, HOTSPOT_PASSWORD, HOTSPOT_SSID};
+use crate::wifi::{ConnectivityStatus, HOTSPOT_IP, HOTSPOT_PASSWORD, HOTSPOT_SSID, WifiService};
 
 pub struct OnboardingPlugin;
 
 impl Plugin for OnboardingPlugin {
     fn build(&self, app: &mut App) {
-        embedded_asset!(app, "assets/videotype.ttf");
+        embedded_asset!(app, "assets/admin/videotype.ttf");
 
         app.add_systems(OnEnter(AppMode::Checking), check_connectivity)
-            .add_systems(OnEnter(AppMode::Onboarding), (start_hotspot, spawn_onboarding_ui))
-            .add_systems(OnExit(AppMode::Onboarding), (stop_hotspot, despawn_onboarding_ui))
+            .add_systems(
+                OnEnter(AppMode::Onboarding),
+                (start_hotspot, spawn_onboarding_ui),
+            )
+            .add_systems(
+                OnExit(AppMode::Onboarding),
+                (stop_hotspot, despawn_onboarding_ui),
+            )
             .add_systems(
                 Update,
                 handle_wifi_connected.run_if(in_state(AppMode::Onboarding)),
@@ -43,7 +49,10 @@ fn check_connectivity(wifi: Res<WifiService>, mut next_state: ResMut<NextState<A
 }
 
 fn start_hotspot(wifi: Res<WifiService>) {
-    info!("Starting WiFi hotspot: {} / {}", HOTSPOT_SSID, HOTSPOT_PASSWORD);
+    info!(
+        "Starting WiFi hotspot: {} / {}",
+        HOTSPOT_SSID, HOTSPOT_PASSWORD
+    );
     if let Err(e) = wifi.0.start_hotspot() {
         error!("Failed to start hotspot: {}", e);
     }
@@ -57,7 +66,7 @@ fn stop_hotspot(wifi: Res<WifiService>) {
 }
 
 fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font = asset_server.load("embedded://ic/assets/videotype.ttf");
+    let font = asset_server.load("embedded://ic/assets/admin/videotype.ttf");
 
     let text_font = TextFont {
         font: font.clone(),

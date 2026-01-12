@@ -63,15 +63,12 @@
   }
 
   .section-content {
-    overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease;
-    max-height: 1000px;
+    transition: opacity 0.2s ease;
     opacity: 1;
   }
 
   .section-content.collapsed {
-    max-height: 0;
+    display: none;
     opacity: 0;
-    margin-bottom: 0;
   }
 </style>

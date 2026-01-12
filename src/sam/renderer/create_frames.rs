@@ -61,11 +61,7 @@ fn add_inflection(inflection: i16, pos: usize, pitches: &mut [u8]) {
 ///
 /// # Returns
 /// FrameData containing pitches, frequencies, amplitudes, and sampled consonant flags
-pub fn create_frames(
-    pitch: u8,
-    tuples: &[PhonemeTuple],
-    freq_data: &[Vec<u8>; 3],
-) -> FrameData {
+pub fn create_frames(pitch: u8, tuples: &[PhonemeTuple], freq_data: &[Vec<u8>; 3]) -> FrameData {
     let mut pitches = Vec::new();
     let mut frequency = [Vec::new(), Vec::new(), Vec::new()];
     let mut amplitude = [Vec::new(), Vec::new(), Vec::new()];
@@ -100,7 +96,7 @@ pub fn create_frames(
 
             if phoneme < AMPLITUDE_DATA.len() {
                 let amp = AMPLITUDE_DATA[phoneme];
-                amplitude[0].push((amp & 0xFF) as u8);        // F1 amplitude
+                amplitude[0].push((amp & 0xFF) as u8); // F1 amplitude
                 amplitude[1].push(((amp >> 8) & 0xFF) as u8); // F2 amplitude
                 amplitude[2].push(((amp >> 16) & 0xFF) as u8); // F3 amplitude
             } else {

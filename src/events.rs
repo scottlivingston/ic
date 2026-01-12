@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
-/// Face type for speech animation
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum FaceType {
-    #[default]
-    Default,
-    Angry,
+/// Face type for speech animation - string-based to support custom faces
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct FaceType(pub String);
+
+impl FaceType {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
 }
 
 /// Event sent when a Say command is received

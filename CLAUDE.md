@@ -14,6 +14,7 @@ IC is a Rust/Bevy application recreating the IC helper robot from the horror gam
 mise run dev        # Development mode with RUST_BACKTRACE=1
 mise run build      # Release build for local machine
 mise run build-pi   # Cross-compile for Raspberry Pi (aarch64-unknown-linux-gnu)
+mise run build-ui   # Build admin web UI (Svelte → src/assets/)
 ```
 
 Requires [mise](https://mise.jdx.dev/) task runner.
@@ -51,7 +52,8 @@ POST /api/speak → Axum → mpsc channel → SayEvent → SAM TTS → Audio Pla
 - `src/events.rs` - Bevy events: SayEvent, EffectsEvent, VolumeEvent
 - `src/sam/` - Complete SAM TTS engine (text→phonemes→u8 PCM at 22050Hz)
 - `src/crt/shaders/crt_sdf.wgsl` - Single-pass WGSL shader with SDF-based glow
-- `assets/admin/` - Web UI embedded in binary via `include_str!()`/`include_bytes!()`
+- `admin/` - Svelte source for web UI (build output goes to `src/assets/`)
+- `src/assets/` - Built admin UI embedded in binary via `include_str!()`/`include_bytes!()`
 
 ## REST API (port 3000)
 

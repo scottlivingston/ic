@@ -365,15 +365,9 @@ pub fn text_to_phonemes(input: &str) -> Option<String> {
     let chars: Vec<char> = text.chars().collect();
 
     // Parse all rules once
-    let rules: Vec<Rule> = RULES
-        .split('|')
-        .filter_map(|r| Rule::parse(r))
-        .collect();
+    let rules: Vec<Rule> = RULES.split('|').filter_map(|r| Rule::parse(r)).collect();
 
-    let rules2: Vec<Rule> = RULES2
-        .split('|')
-        .filter_map(|r| Rule::parse(r))
-        .collect();
+    let rules2: Vec<Rule> = RULES2.split('|').filter_map(|r| Rule::parse(r)).collect();
 
     // Group rules by first character of match
     let mut rules_by_char: std::collections::HashMap<char, Vec<&Rule>> =

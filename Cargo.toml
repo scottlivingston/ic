@@ -34,6 +34,7 @@ serde_json = "1"
 rodio = { version = "0.21", default-features = false, features = ["playback", "symphonia-all"] }
 bytemuck = { version = "1", features = ["derive"] }
 dirs = "6"
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [profile.release]
 opt-level = "s"

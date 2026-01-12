@@ -70,26 +70,9 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             step(0.98, fract(screen_pos.y / grid_size))
         );
 
-        // Apply vignette mask to grid when curvature is enabled
-        var grid_opacity = 0.1;
-        if settings.curvature_enabled != 0u {
-            let centered = uv - 0.5;
-            let dist = length(centered) * 2.0;
-            let vignette = smoothstep(0.5, 1.0, dist);
-            grid_opacity *= (1.0 - vignette);
-        }
-
         // Grid color: rgba(0, 255, 170, 0.1) = #00ffaa
         let grid_color = vec3<f32>(0.0, 1.0, 0.667);
-        color = mix(color, grid_color, grid_line * grid_opacity);
-    }
-
-    // Apply vignette when curvature is enabled
-    if settings.curvature_enabled != 0u {
-        let centered = uv - 0.5;
-        let dist = length(centered) * 2.0;
-        let vignette = smoothstep(0.8, 1.2, dist);
-        color = color * (1.0 - vignette * 0.5); // dim by up to 50% at edges
+        color = mix(color, grid_color, grid_line * 0.1);
     }
 
     // Apply edge fade for smooth antialiased edges on curvature

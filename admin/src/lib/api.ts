@@ -1,4 +1,4 @@
-import type { EffectsState, WifiNetwork, HudState, WifiConnectResponse, WifiForgetResponse, WifiStatus } from './types';
+import type { EffectsState, WifiNetwork, HudState, WifiConnectResponse, WifiForgetResponse, WifiStatus, PresetPhrase, Settings, SavePhrasesResponse } from './types';
 
 export async function sendSpeak(msg: string, face?: string): Promise<void> {
   try {
@@ -131,4 +131,54 @@ export async function toggleIpHud(show: boolean): Promise<boolean> {
     console.error('Error toggling IP HUD:', err);
     return false;
   }
+}
+
+export async function fetchSettings(): Promise<Settings | null> {
+  try {
+    const response = await fetch('/api/settings');
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (err) {
+    console.error('Error fetching settings:', err);
+  }
+  return null;
+}
+
+export async function fetchPhrases(): Promise<PresetPhrase[]> {
+  try {
+    const response = await fetch('/api/phrases');
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (err) {
+    console.error('Error fetching phrases:', err);
+  }
+  return [];
+}
+
+export async function savePhrases(phrases: PresetPhrase[]): Promise<SavePhrasesResponse> {
+  try {
+    const response = await fetch('/api/phrases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(phrases),
+    });
+    return await response.json();
+  } catch (err) {
+    console.error('Error saving phrases:', err);
+    return { success: false, error: 'Request error' };
+  }
+}
+
+export async function fetchFaces(): Promise<string[]> {
+  try {
+    const response = await fetch('/api/faces');
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (err) {
+    console.error('Error fetching faces:', err);
+  }
+  return ['default'];
 }

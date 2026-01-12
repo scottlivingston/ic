@@ -3,30 +3,31 @@ pub mod effects;
 use bevy::{
     asset::embedded_asset,
     core_pipeline::{
-        core_2d::graph::{Core2d, Node2d},
         FullscreenShader,
+        core_2d::graph::{Core2d, Node2d},
     },
     prelude::*,
     render::{
+        RenderApp, RenderStartup,
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         render_graph::{
             NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
         },
         render_resource::{
-            binding_types::{sampler, texture_2d, uniform_buffer},
             BindGroupEntries, BindGroupLayout, BindGroupLayoutEntries, Buffer, BufferDescriptor,
             BufferUsages, CachedRenderPipelineId, ColorTargetState, ColorWrites, FragmentState,
-            Operations, PipelineCache, RenderPassColorAttachment,
-            RenderPassDescriptor, RenderPipelineDescriptor, Sampler, SamplerBindingType,
-            SamplerDescriptor, ShaderStages, ShaderType, TextureFormat, TextureSampleType,
+            Operations, PipelineCache, RenderPassColorAttachment, RenderPassDescriptor,
+            RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages,
+            ShaderType, TextureFormat, TextureSampleType,
+            binding_types::{sampler, texture_2d, uniform_buffer},
         },
         renderer::{RenderContext, RenderDevice, RenderQueue},
         view::ViewTarget,
-        RenderApp, RenderStartup,
     },
 };
 
-use effects::{update_effects_from_events, CrtEffects};
+use crate::config::AppConfig;
+use effects::{CrtEffects, update_effects_from_events};
 
 pub struct CrtPlugin;
 
@@ -35,7 +36,14 @@ impl Plugin for CrtPlugin {
         // SDF shader (single pass, faster)
         embedded_asset!(app, "shaders/crt_sdf.wgsl");
 
-        app.init_resource::<CrtEffects>()
+        // Load CRT effects from config (or use defaults if config not available)
+        let crt_effects = app
+            .world()
+            .get_resource::<AppConfig>()
+            .map(CrtEffects::from_config)
+            .unwrap_or_default();
+
+        app.insert_resource(crt_effects)
             .add_plugins(ExtractComponentPlugin::<CrtSettings>::default())
             .add_systems(Update, update_effects_from_events)
             .add_systems(Update, sync_crt_settings);
@@ -51,7 +59,7 @@ impl Plugin for CrtPlugin {
                 Core2d,
                 (
                     Node2d::Tonemapping,
-                    CrtLabel,  // Single pass SDF-based CRT effects
+                    CrtLabel, // Single pass SDF-based CRT effects
                     Node2d::EndMainPassPostProcessing,
                 ),
             );
@@ -156,7 +164,11 @@ impl ViewNode for CrtNode {
         // Update cached uniform buffer with current settings
         let uniform = CrtSettingsUniform::from(settings);
         let render_queue = world.resource::<RenderQueue>();
-        render_queue.write_buffer(&crt_pipeline.uniform_buffer, 0, bytemuck::bytes_of(&uniform));
+        render_queue.write_buffer(
+            &crt_pipeline.uniform_buffer,
+            0,
+            bytemuck::bytes_of(&uniform),
+        );
 
         let bind_group = render_context.render_device().create_bind_group(
             "crt_bind_group",
@@ -228,23 +240,21 @@ impl CrtPipeline {
 
         let shader = asset_server.load::<Shader>("embedded://ic/crt/shaders/crt_sdf.wgsl");
 
-        let pipeline_id = pipeline_cache.queue_render_pipeline(
-            RenderPipelineDescriptor {
-                label: Some("crt_pipeline".into()),
-                layout: vec![layout.clone()],
-                vertex: fullscreen_shader.to_vertex_state(),
-                fragment: Some(FragmentState {
-                    shader,
-                    targets: vec![Some(ColorTargetState {
-                        format: TextureFormat::Rgba8UnormSrgb,
-                        blend: None,
-                        write_mask: ColorWrites::ALL,
-                    })],
-                    ..default()
-                }),
+        let pipeline_id = pipeline_cache.queue_render_pipeline(RenderPipelineDescriptor {
+            label: Some("crt_pipeline".into()),
+            layout: vec![layout.clone()],
+            vertex: fullscreen_shader.to_vertex_state(),
+            fragment: Some(FragmentState {
+                shader,
+                targets: vec![Some(ColorTargetState {
+                    format: TextureFormat::Rgba8UnormSrgb,
+                    blend: None,
+                    write_mask: ColorWrites::ALL,
+                })],
                 ..default()
-            },
-        );
+            }),
+            ..default()
+        });
 
         Self {
             layout,

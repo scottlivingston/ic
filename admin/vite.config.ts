@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [svelte()],
   build: {
     // Output to src/admin_assets for Rust embedding
-    outDir: '../src/assets',
-    emptyDirOnBuild: true,
+    outDir: '../src/assets/admin',
+    emptyOutDir: true,
     // Single CSS file
     cssCodeSplit: false,
     // Predictable filenames for Rust embedding

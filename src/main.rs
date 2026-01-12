@@ -1,10 +1,12 @@
 mod app_state;
+mod assets;
 mod audio;
 mod config;
 mod crt;
 #[cfg(feature = "diagnostics")]
 mod diagnostics;
 mod events;
+mod face_library;
 mod hud;
 mod onboarding;
 mod sam;
@@ -13,14 +15,16 @@ mod simple_face;
 mod wifi;
 
 use bevy::prelude::*;
-use bevy::window::{MonitorSelection, PresentMode, WindowMode};
 #[cfg(feature = "pi")]
 use bevy::window::{CursorOptions, Window};
+use bevy::window::{MonitorSelection, PresentMode, WindowMode};
 
 use app_state::AppMode;
 use audio::AudioPlugin;
+use config::AppConfig;
 #[cfg(feature = "diagnostics")]
 use diagnostics::DiagnosticsPlugin;
+use face_library::FaceLibrary;
 use hud::HudPlugin;
 use onboarding::OnboardingPlugin;
 use server::ServerPlugin;
@@ -58,6 +62,14 @@ fn hide_cursor(mut cursor_query: Query<&mut CursorOptions, With<Window>>) {
 
 fn main() {
     let mut app = App::new();
+
+    // Load config from disk (or use defaults)
+    let config = AppConfig::load();
+    app.insert_resource(config);
+
+    // Load face library (embedded defaults + user custom faces)
+    let face_library = FaceLibrary::load();
+    app.insert_resource(face_library);
 
     // Insert WiFi service: mock without pi feature, real with pi feature
     #[cfg(not(feature = "pi"))]

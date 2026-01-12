@@ -8,8 +8,9 @@ use bevy::log::{error, info};
 use bevy::prelude::*;
 use rodio::{OutputStreamBuilder, Sink};
 
-use crate::simple_face::SpeakingState;
+use crate::config::AppConfig;
 use crate::events::{SayEvent, VolumeEvent};
+use crate::simple_face::SpeakingState;
 
 pub struct AudioPlugin;
 
@@ -18,11 +19,24 @@ impl Plugin for AudioPlugin {
         // Create SAM handle (spawns dedicated SAM thread)
         let sam_handle = sam::SamHandle::new();
 
-        // Create audio output
-        let audio_state = AudioState::new(sam_handle);
+        // Get initial volume from config
+        let initial_volume = app
+            .world()
+            .get_resource::<AppConfig>()
+            .map(|c| c.volume)
+            .unwrap_or(0.04);
 
-        app.insert_resource(audio_state)
-            .add_systems(Update, (handle_say_events, handle_volume_events, check_speech_finished));
+        // Create audio output
+        let audio_state = AudioState::new(sam_handle, initial_volume);
+
+        app.insert_resource(audio_state).add_systems(
+            Update,
+            (
+                handle_say_events,
+                handle_volume_events,
+                check_speech_finished,
+            ),
+        );
     }
 }
 
@@ -39,10 +53,10 @@ pub struct AudioState {
 }
 
 impl AudioState {
-    pub fn new(sam_handle: sam::SamHandle) -> Self {
+    pub fn new(sam_handle: sam::SamHandle, initial_volume: f32) -> Self {
         let is_playing = Arc::new(Mutex::new(false));
         let is_playing_clone = is_playing.clone();
-        let volume = Arc::new(Mutex::new(0.04f32)); // 20% on admin slider (scaled by 0.2)
+        let volume = Arc::new(Mutex::new(initial_volume));
         let volume_clone = volume.clone();
 
         let (audio_sender, audio_receiver) = std::sync::mpsc::channel::<Vec<u8>>();
@@ -127,12 +141,15 @@ fn handle_say_events(
     mut speaking_state: ResMut<SpeakingState>,
 ) {
     for event in say_events.read() {
-        info!("Processing Say event: {} (face: {:?})", event.msg, event.face);
+        info!(
+            "Processing Say event: {} (face: {:?})",
+            event.msg, event.face
+        );
 
         // Generate and play SAM audio
         match audio_state.generate_and_play(&event.msg) {
             Ok(()) => {
-                speaking_state.start_speaking(event.face);
+                speaking_state.start_speaking(event.face.0.clone());
             }
             Err(e) => {
                 error!("Failed to generate speech: {}", e);
@@ -141,10 +158,7 @@ fn handle_say_events(
     }
 }
 
-fn check_speech_finished(
-    audio_state: Res<AudioState>,
-    mut speaking_state: ResMut<SpeakingState>,
-) {
+fn check_speech_finished(audio_state: Res<AudioState>, mut speaking_state: ResMut<SpeakingState>) {
     // Check if we were speaking and audio has finished
     if speaking_state.speaking && !audio_state.is_playing() {
         speaking_state.stop_speaking();
