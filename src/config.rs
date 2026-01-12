@@ -3,77 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+use crate::error::IcError;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PresetPhrase {
     pub text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub face: Option<String>,
-}
-
-fn default_phrases() -> Vec<PresetPhrase> {
-    vec![
-        PresetPhrase {
-            text: "I AM THE I C.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Hello, Lunar traveler.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Welcome to the Mall Station!".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Follow me to the check-in terminal and get ready for an adventure in The Mall!"
-                .into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Hello again, why are you still here.".into(),
-            face: Some("angry".into()),
-        },
-        PresetPhrase {
-            text: "You need to sign in using this terminal!".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Umm.. there seems to be a problem.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Not to worry mister, I know another way, follow me.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Oh my, What a day!".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "I love helping people who have no clue what they are doing.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Everyone comes here, Union Plaza is the best, Ha ha..".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Have you seen Jackie recently? I miss her.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Did you know that four legs are better than two. he he he.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "I am happy to stay here.. yes.".into(),
-            face: None,
-        },
-        PresetPhrase {
-            text: "Good by fellow Moon traveler, Good byy!".into(),
-            face: None,
-        },
-    ]
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,7 +59,7 @@ pub struct AppConfig {
     pub volume: f32,
     #[serde(default)]
     pub crt_effects: CrtEffectsConfig,
-    #[serde(default = "default_phrases")]
+    #[serde(default = "crate::assets::default_phrases")]
     pub phrases: Vec<PresetPhrase>,
 }
 
@@ -133,7 +69,7 @@ impl Default for AppConfig {
             show_ip: false,
             volume: default_volume(),
             crt_effects: CrtEffectsConfig::default(),
-            phrases: default_phrases(),
+            phrases: crate::assets::default_phrases(),
         }
     }
 }
@@ -158,18 +94,19 @@ impl AppConfig {
         }
     }
 
-    pub fn save(&self) -> Result<(), std::io::Error> {
+    pub fn save(&self) -> Result<(), IcError> {
         let Some(dir) = Self::config_dir() else {
-            return Err(std::io::Error::new(
+            return Err(IcError::Config(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "Could not determine config directory",
-            ));
+            )));
         };
 
         fs::create_dir_all(&dir)?;
 
         let path = dir.join("config.json");
         let contents = serde_json::to_string_pretty(self)?;
-        fs::write(path, contents)
+        fs::write(path, contents)?;
+        Ok(())
     }
 }

@@ -60,17 +60,6 @@ impl FaceLibrary {
         Self { faces }
     }
 
-    /// Get the raw PNG bytes for an embedded face image
-    pub fn get_embedded_image(name: &str) -> Option<&'static [u8]> {
-        match name {
-            "default.png" => Some(FACE_DEFAULT),
-            "default_talking.png" => Some(FACE_DEFAULT_TALKING),
-            "angry.png" => Some(FACE_ANGRY),
-            "angry_talking.png" => Some(FACE_ANGRY_TALKING),
-            _ => None,
-        }
-    }
-
     /// Get a face by name, falling back to "default" if not found
     pub fn get(&self, name: &str) -> &FaceData {
         self.faces

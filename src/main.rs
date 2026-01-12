@@ -1,10 +1,15 @@
+// Feature gate conventions:
+// - Module-level gating (#[cfg(feature)] on mod): Optional features that can be excluded
+// - Inline gating (#[cfg(feature)] inside module): Platform-specific implementations within required modules
+
 mod app_state;
 mod assets;
 mod audio;
 mod config;
 mod crt;
 #[cfg(feature = "diagnostics")]
-mod diagnostics;
+mod diagnostics; // Optional FPS overlay
+mod error;
 mod events;
 mod face_library;
 mod hud;
@@ -12,7 +17,7 @@ mod onboarding;
 mod sam;
 mod server;
 mod simple_face;
-mod wifi;
+mod wifi; // Contains inline #[cfg(feature = "pi")] for mock vs real implementations
 
 use bevy::prelude::*;
 #[cfg(feature = "pi")]

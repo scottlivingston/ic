@@ -9,8 +9,8 @@ use bevy::prelude::*;
 use rodio::{OutputStreamBuilder, Sink};
 
 use crate::config::AppConfig;
-use crate::events::{SayEvent, VolumeEvent};
-use crate::simple_face::SpeakingState;
+use crate::error::IcError;
+use crate::events::{SayEvent, SpeakingState, VolumeEvent};
 
 pub struct AudioPlugin;
 
@@ -115,14 +115,17 @@ impl AudioState {
         }
     }
 
-    pub fn generate_and_play(&self, text: &str) -> Result<(), String> {
-        let audio_data = self.sam_handle.generate_speech(text)?;
+    pub fn generate_and_play(&self, text: &str) -> Result<(), IcError> {
+        let audio_data = self
+            .sam_handle
+            .generate_speech(text)
+            .map_err(IcError::Audio)?;
         // Set is_playing BEFORE sending to avoid race condition with check_speech_finished
         *self.is_playing.lock().unwrap() = true;
         self.audio_sender.send(audio_data).map_err(|e| {
             // Reset is_playing if send fails
             *self.is_playing.lock().unwrap() = false;
-            format!("Audio thread died: {}", e)
+            IcError::Audio(format!("Audio thread died: {}", e))
         })
     }
 

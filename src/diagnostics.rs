@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::sprite::Anchor;
 
 use crate::app_state::AppMode;
+use crate::assets::FACE_COLOR;
 
 pub struct DiagnosticsPlugin;
 
@@ -43,8 +44,6 @@ impl Default for DiagnosticsState {
     }
 }
 
-// Face color: #ccffee
-const TEXT_COLOR: Color = Color::srgb(0.8, 1.0, 0.933);
 
 fn spawn_diagnostics_display(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load("embedded://ic/assets/admin/videotype.ttf");
@@ -59,7 +58,7 @@ fn spawn_diagnostics_display(mut commands: Commands, asset_server: Res<AssetServ
             font_size: 20.0,
             ..default()
         },
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         Anchor::TOP_LEFT,
         Transform::from_xyz(-300.0, 220.0, 10.0),
     ));

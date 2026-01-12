@@ -2,6 +2,7 @@ use bevy::asset::embedded_asset;
 use bevy::prelude::*;
 
 use crate::app_state::AppMode;
+use crate::assets::FACE_COLOR;
 use crate::events::WifiConnectedEvent;
 use crate::wifi::{ConnectivityStatus, HOTSPOT_IP, HOTSPOT_PASSWORD, HOTSPOT_SSID, WifiService};
 
@@ -29,9 +30,6 @@ impl Plugin for OnboardingPlugin {
 
 #[derive(Component)]
 struct OnboardingUi;
-
-// Face color: #ccffee - same as face.rs
-const TEXT_COLOR: Color = Color::srgb(0.8, 1.0, 0.933);
 
 fn check_connectivity(wifi: Res<WifiService>, mut next_state: ResMut<NextState<AppMode>>) {
     let status = wifi.0.check_connectivity();
@@ -85,7 +83,7 @@ fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         OnboardingUi,
         Text2d::new("IC SETUP MODE"),
         text_font.clone(),
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         Transform::from_xyz(0.0, 160.0, 1.0),
     ));
 
@@ -94,7 +92,7 @@ fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         OnboardingUi,
         Text2d::new("Connect to WiFi:"),
         small_font.clone(),
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         Transform::from_xyz(0.0, 80.0, 1.0),
     ));
 
@@ -102,7 +100,7 @@ fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         OnboardingUi,
         Text2d::new(format!("Network: {}", HOTSPOT_SSID)),
         small_font.clone(),
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         Transform::from_xyz(0.0, 40.0, 1.0),
     ));
 
@@ -110,7 +108,7 @@ fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         OnboardingUi,
         Text2d::new(format!("Password: {}", HOTSPOT_PASSWORD)),
         small_font.clone(),
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         Transform::from_xyz(0.0, 0.0, 1.0),
     ));
 
@@ -118,7 +116,7 @@ fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         OnboardingUi,
         Text2d::new("Then open:"),
         small_font.clone(),
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         Transform::from_xyz(0.0, -60.0, 1.0),
     ));
 
@@ -126,7 +124,7 @@ fn spawn_onboarding_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         OnboardingUi,
         Text2d::new(format!("http://{}:3000", HOTSPOT_IP)),
         small_font,
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         Transform::from_xyz(0.0, -100.0, 1.0),
     ));
 }

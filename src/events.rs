@@ -1,5 +1,23 @@
 use bevy::prelude::*;
 
+/// Shared resource to track speaking state between face and audio modules
+#[derive(Resource, Default)]
+pub struct SpeakingState {
+    pub speaking: bool,
+    pub face_name: String,
+}
+
+impl SpeakingState {
+    pub fn start_speaking(&mut self, face_name: String) {
+        self.speaking = true;
+        self.face_name = face_name;
+    }
+
+    pub fn stop_speaking(&mut self) {
+        self.speaking = false;
+    }
+}
+
 /// Face type for speech animation - string-based to support custom faces
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct FaceType(pub String);

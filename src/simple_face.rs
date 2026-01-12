@@ -9,31 +9,12 @@ use bevy::prelude::*;
 use std::collections::HashMap;
 
 use crate::app_state::AppMode;
+use crate::assets::FACE_COLOR;
+use crate::events::SpeakingState;
 use crate::face_library::{FaceLibrary, GRID_HEIGHT, GRID_WIDTH};
-
-/// Shared resource to track speaking state between face and audio modules
-#[derive(Resource, Default)]
-pub struct SpeakingState {
-    pub speaking: bool,
-    pub face_name: String,
-}
-
-impl SpeakingState {
-    pub fn start_speaking(&mut self, face_name: String) {
-        self.speaking = true;
-        self.face_name = face_name;
-    }
-
-    pub fn stop_speaking(&mut self) {
-        self.speaking = false;
-    }
-}
 
 /// Virtual pixel size in real pixels
 const PIXEL_SIZE: f32 = 16.0;
-
-// Face color: #ccffee
-const FACE_COLOR: Color = Color::srgb(0.8, 1.0, 0.933);
 
 /// Get lit pixel positions from a pattern
 fn get_lit_pixels(pattern: &[[u8; GRID_WIDTH]; GRID_HEIGHT]) -> Vec<(usize, usize)> {

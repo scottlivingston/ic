@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::sprite::Anchor;
 
 use crate::app_state::AppMode;
+use crate::assets::FACE_COLOR;
 use crate::config::AppConfig;
 use crate::events::ToggleHudEvent;
 use crate::wifi::WifiService;
@@ -42,9 +43,6 @@ impl Default for HudState {
 #[derive(Component)]
 struct IpHud;
 
-// Face color: #ccffee
-const TEXT_COLOR: Color = Color::srgb(0.8, 1.0, 0.933);
-
 fn load_hud_config(
     wifi: Res<WifiService>,
     mut hud_state: ResMut<HudState>,
@@ -81,7 +79,7 @@ fn spawn_ip_hud(mut commands: Commands, asset_server: Res<AssetServer>, hud_stat
         IpHud,
         Text2d::new(ip_text),
         text_font,
-        TextColor(TEXT_COLOR),
+        TextColor(FACE_COLOR),
         TextLayout::new_with_justify(Justify::Left),
         Anchor::CENTER_LEFT,
         Transform::from_xyz(-290.0, -200.0, 1.0),
